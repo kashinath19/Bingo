@@ -1,0 +1,69 @@
+/* General Reset */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+body { background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden; }
+
+/* Login Screen */
+#login-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.login-box { background: white; padding: 2rem; border-radius: 10px; text-align: center; }
+.login-box input { padding: 10px; margin: 10px 0; font-size: 16px; }
+.login-box button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; }
+
+/* Main Layout */
+.main-container { display: flex; width: 100%; height: 100%; }
+
+/* Left: Game Area */
+.game-area { flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #ecf0f1; }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    background: #34495e;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+.cell {
+    width: 60px; height: 60px;
+    background: white;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.2rem; font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+}
+/* Editable input for manual mode */
+.cell input { width: 100%; height: 100%; text-align: center; border: none; font-size: 1.2rem; }
+
+.cell.marked { background: #e74c3c; color: white; } /* Red for marked */
+.cell.free { background: #f1c40f; color: black; }   /* Gold for center Free space */
+
+#bingo-btn {
+    padding: 15px 30px; font-size: 1.5rem; background: #8e44ad; color: white;
+    border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 4px #6c3483;
+}
+#bingo-btn:active { transform: translateY(4px); box-shadow: none; }
+
+/* Right: Chat Area */
+.chat-area { flex: 1; display: flex; flex-direction: column; background: white; border-left: 2px solid #bdc3c7; max-width: 400px; }
+.chat-header { padding: 15px; background: #2980b9; color: white; font-weight: bold; }
+.messages { flex: 1; padding: 10px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 8px; }
+
+.message { padding: 8px 12px; border-radius: 15px; max-width: 85%; font-size: 0.9rem; }
+.message.mine { align-self: flex-end; background: #3498db; color: white; }
+.message.theirs { align-self: flex-start; background: #e5e5ea; color: black; }
+.message.system { align-self: center; background: transparent; color: #7f8c8d; font-style: italic; font-size: 0.8rem; }
+.message.win { align-self: center; background: #f1c40f; color: black; font-weight: bold; border: 2px solid #d35400; text-align: center; }
+
+.chat-input { display: flex; padding: 10px; border-top: 1px solid #ddd; }
+.chat-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; margin-right: 10px; }
+.chat-input button { padding: 10px 20px; background: #2980b9; color: white; border: none; border-radius: 20px; cursor: pointer; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-container { flex-direction: column; }
+    .chat-area { max-width: 100%; height: 40%; border-left: none; border-top: 2px solid #ccc; }
+    .cell { width: 40px; height: 40px; font-size: 0.9rem; }
+}
