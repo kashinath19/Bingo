@@ -60,38 +60,33 @@ function createEmptyBoard() {
     grid.innerHTML = "";
     board = [];
 
+    // Loop 25 times for a pure 5x5 grid (No Free Space)
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
         cell.dataset.index = i;
 
-        if (i === 12) {
-            // Center Free Space
-            cell.classList.add('free', 'marked');
-            cell.textContent = "FREE";
-        } else {
-            // Input for manual entry
-            const input = document.createElement('input');
-            input.type = "number";
-            input.placeholder = "-";
-            input.min = 1;
-            input.max = 25;
-            cell.appendChild(input);
-        }
+        // Create input for every cell, including the center
+        const input = document.createElement('input');
+        input.type = "number";
+        input.placeholder = "-";
+        input.min = 1;
+        input.max = 25;
+        cell.appendChild(input);
+        
         grid.appendChild(cell);
     }
 }
 
-// Generate Random Board (1-25 Only)
+// Generate Random Board (1-25 Only, No Free Space)
 function generateRandomBoard() {
     const grid = document.getElementById('bingo-grid');
     grid.innerHTML = "";
     board = [];
     
-    // Generate numbers 1-25 unique
+    // Generate a shuffled list of numbers 1-25
     let numbers = [];
     while(numbers.length < 25){
-        // Changed logic here: Range is now 1 to 25
         let r = Math.floor(Math.random() * 25) + 1;
         if(numbers.indexOf(r) === -1) numbers.push(r);
     }
@@ -100,16 +95,13 @@ function generateRandomBoard() {
         const cell = document.createElement('div');
         cell.classList.add('cell');
         
-        if (i === 12) {
-            cell.classList.add('free', 'marked');
-            cell.textContent = "FREE";
-            board.push("FREE");
-        } else {
-            cell.textContent = numbers[i];
-            board.push(numbers[i]);
-            // Click to toggle mark
-            cell.onclick = () => toggleCell(cell);
-        }
+        // Just assign the number to the cell (No Free Space check)
+        cell.textContent = numbers[i];
+        board.push(numbers[i]);
+        
+        // Click to toggle mark
+        cell.onclick = () => toggleCell(cell);
+        
         grid.appendChild(cell);
     }
 }
@@ -119,7 +111,6 @@ function resetBoard() {
 }
 
 function toggleCell(cell) {
-    if (cell.classList.contains('free')) return; // Don't unmark free space
     cell.classList.toggle('marked');
 }
 
