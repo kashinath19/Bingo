@@ -23,15 +23,15 @@
                 <h2>BINGO</h2>
                 <div class="controls">
                     <button onclick="generateRandomBoard()">Random Board</button>
-                    <button onclick="resetBoard()">Clear Board</button>
-                    <p class="instruction">Click cells to mark them.</p>
+                    <button onclick="resetBoard()">Clear / Manual</button>
+                    <button id="start-manual-btn" onclick="confirmManualBoard()">Start Game</button>
                 </div>
+                <p class="instruction" id="game-status">Enter numbers 1-25 uniquely or click Random.</p>
             </div>
 
-            <div id="bingo-grid" class="grid">
-                </div>
+            <div id="bingo-grid" class="grid"></div>
 
-            <button id="bingo-btn" onclick="declareWin()">I HAVE BINGO!</button>
+            <button id="bingo-btn" onclick="declareWin()" style="display:none;">I HAVE BINGO!</button>
         </div>
 
         <div class="chat-area">

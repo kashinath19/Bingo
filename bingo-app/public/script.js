@@ -1,6 +1,7 @@
 const socket = io();
 let username = "";
-let board = []; // Stores the 5x5 grid values
+let board = [];
+let isGameActive = false;
 
 // --- 1. Login Logic ---
 function joinGame() {
@@ -12,7 +13,7 @@ function joinGame() {
     document.getElementById('game-container').style.display = 'flex';
     
     socket.emit('join', username);
-    createEmptyBoard(); // Start with editable board
+    createEmptyBoard(); 
 }
 
 // --- 2. Chat Logic ---
@@ -25,7 +26,6 @@ function sendMessage() {
     }
 }
 
-// Allow pressing "Enter" to send
 document.getElementById('msg-input').addEventListener("keypress", function(event) {
     if (event.key === "Enter") sendMessage();
 });
@@ -43,67 +43,110 @@ socket.on('chat_message', (data) => {
         msgDiv.classList.add('win');
         msgDiv.textContent = data.text;
     } else {
-        // Normal Chat
         msgDiv.classList.add(data.user === username ? 'mine' : 'theirs');
         msgDiv.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
     }
     
     chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
+    chatBox.scrollTop = chatBox.scrollHeight; 
 });
 
-// --- 3. Bingo Game Logic ---
+// --- 3. Strict Bingo Logic ---
 
-// Create an empty grid where users can type numbers manually
+// Helper: Adds the B-I-N-G-O header row
+function addBingoHeaders(gridElement) {
+    const letters = ['B', 'I', 'N', 'G', 'O'];
+    letters.forEach(letter => {
+        const header = document.createElement('div');
+        header.classList.add('header-cell');
+        header.textContent = letter;
+        gridElement.appendChild(header);
+    });
+}
+
 function createEmptyBoard() {
     const grid = document.getElementById('bingo-grid');
     grid.innerHTML = "";
-    board = [];
+    
+    // Insert B-I-N-G-O Headers first
+    addBingoHeaders(grid);
 
-    // Loop 25 times for a pure 5x5 grid (No Free Space)
+    board = [];
+    isGameActive = false;
+    document.getElementById('bingo-btn').style.display = 'none';
+    document.getElementById('start-manual-btn').style.display = 'inline-block';
+    document.getElementById('game-status').textContent = "Enter numbers 1-25 uniquely.";
+
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        cell.dataset.index = i;
-
-        // Create input for every cell, including the center
+        
         const input = document.createElement('input');
         input.type = "number";
-        input.placeholder = "-";
         input.min = 1;
         input.max = 25;
-        cell.appendChild(input);
         
+        // STRICT INPUT: Prevent typing non-numbers or > 25 immediately
+        input.addEventListener('input', function() {
+            if (this.value > 25) this.value = 25;
+            if (this.value < 1 && this.value !== "") this.value = 1;
+        });
+
+        cell.appendChild(input);
         grid.appendChild(cell);
     }
 }
 
-// Generate Random Board (1-25 Only, No Free Space)
 function generateRandomBoard() {
-    const grid = document.getElementById('bingo-grid');
-    grid.innerHTML = "";
-    board = [];
-    
-    // Generate a shuffled list of numbers 1-25
+    // Generate unique numbers first
     let numbers = [];
     while(numbers.length < 25){
         let r = Math.floor(Math.random() * 25) + 1;
-        if(numbers.indexOf(r) === -1) numbers.push(r);
+        if(!numbers.includes(r)) numbers.push(r);
+    }
+    renderPlayableBoard(numbers);
+}
+
+function confirmManualBoard() {
+    const inputs = document.querySelectorAll('.cell input');
+    let values = [];
+    let seen = new Set();
+
+    for (let input of inputs) {
+        let val = parseInt(input.value);
+
+        if (isNaN(val)) return alert("Please fill all cells with numbers.");
+        if (val < 1 || val > 25) return alert(`Invalid number: ${val}. Strictly use 1-25.`);
+        if (seen.has(val)) return alert(`Duplicate found: ${val}. Each number must be unique.`);
+        
+        seen.add(val);
+        values.push(val);
     }
 
-    for (let i = 0; i < 25; i++) {
+    renderPlayableBoard(values);
+}
+
+function renderPlayableBoard(numbers) {
+    const grid = document.getElementById('bingo-grid');
+    grid.innerHTML = "";
+    
+    // Insert B-I-N-G-O Headers first
+    addBingoHeaders(grid);
+
+    board = numbers;
+    isGameActive = true;
+
+    document.getElementById('start-manual-btn').style.display = 'none';
+    document.getElementById('bingo-btn').style.display = 'block';
+    document.getElementById('game-status').textContent = "Game On! Click to mark numbers.";
+
+    numbers.forEach(num => {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        
-        // Just assign the number to the cell (No Free Space check)
-        cell.textContent = numbers[i];
-        board.push(numbers[i]);
-        
-        // Click to toggle mark
+        cell.textContent = num;
         cell.onclick = () => toggleCell(cell);
-        
         grid.appendChild(cell);
-    }
+    });
 }
 
 function resetBoard() {
@@ -111,9 +154,11 @@ function resetBoard() {
 }
 
 function toggleCell(cell) {
+    if(!isGameActive) return;
     cell.classList.toggle('marked');
 }
 
 function declareWin() {
+    if(!isGameActive) return;
     socket.emit('bingo_win', username);
 }
