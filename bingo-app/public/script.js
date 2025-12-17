@@ -53,13 +53,22 @@ socket.on('chat_message', (data) => {
 
 // --- 3. Strict Bingo Logic ---
 
-// Helper: Adds the B-I-N-G-O header row
+// Helper: Adds the B-I-N-G-O header row (CLICKABLE NOW)
 function addBingoHeaders(gridElement) {
     const letters = ['B', 'I', 'N', 'G', 'O'];
     letters.forEach(letter => {
         const header = document.createElement('div');
         header.classList.add('header-cell');
         header.textContent = letter;
+        
+        // CLICK EVENT: User clicks to mark/trace the letter
+        header.onclick = () => {
+            // Only allow clicking if the game has started
+            if (isGameActive) {
+                header.classList.toggle('active');
+            }
+        };
+
         gridElement.appendChild(header);
     });
 }
@@ -138,7 +147,7 @@ function renderPlayableBoard(numbers) {
 
     document.getElementById('start-manual-btn').style.display = 'none';
     document.getElementById('bingo-btn').style.display = 'block';
-    document.getElementById('game-status').textContent = "Game On! Click to mark numbers.";
+    document.getElementById('game-status').textContent = "Game On! Click to mark numbers. Click Headers to trace BINGO.";
 
     numbers.forEach(num => {
         const cell = document.createElement('div');

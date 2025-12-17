@@ -27,10 +27,10 @@ body { background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden
     margin: 20px 0;
 }
 
-/* New Header Cells for B-I-N-G-O */
+/* --- UPDATED HEADER STYLES --- */
 .header-cell {
     width: 60px; height: 40px;
-    background: #e67e22; /* Orange-ish color */
+    background: #e67e22; /* Default Orange */
     color: white;
     font-weight: 900;
     font-size: 1.5rem;
@@ -41,6 +41,16 @@ body { background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden
     margin-bottom: 5px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     user-select: none;
+    cursor: pointer; /* Shows it is clickable */
+    transition: all 0.2s ease;
+}
+
+/* Style when you click/select a letter */
+.header-cell.active {
+    background: #27ae60; /* Green */
+    transform: scale(1.1);
+    box-shadow: 0 0 10px #2ecc71;
+    border: 2px solid white;
 }
 
 .cell {
