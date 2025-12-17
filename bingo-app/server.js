@@ -10,7 +10,7 @@ const io = new Server(server);
 // Serve static files from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active players (simplified)
+// Store active players
 let players = {};
 
 io.on('connection', (socket) => {

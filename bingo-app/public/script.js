@@ -53,7 +53,7 @@ socket.on('chat_message', (data) => {
 
 // --- 3. Strict Bingo Logic ---
 
-// Helper: Adds the B-I-N-G-O header row (CLICKABLE NOW)
+// Helper: Adds the B-I-N-G-O header row (ALWAYS CLICKABLE)
 function addBingoHeaders(gridElement) {
     const letters = ['B', 'I', 'N', 'G', 'O'];
     letters.forEach(letter => {
@@ -61,12 +61,9 @@ function addBingoHeaders(gridElement) {
         header.classList.add('header-cell');
         header.textContent = letter;
         
-        // CLICK EVENT: User clicks to mark/trace the letter
-        header.onclick = () => {
-            // Only allow clicking if the game has started
-            if (isGameActive) {
-                header.classList.toggle('active');
-            }
+        // CLICK EVENT: Toggle color immediately
+        header.onclick = function() {
+            this.classList.toggle('active');
         };
 
         gridElement.appendChild(header);
@@ -77,7 +74,6 @@ function createEmptyBoard() {
     const grid = document.getElementById('bingo-grid');
     grid.innerHTML = "";
     
-    // Insert B-I-N-G-O Headers first
     addBingoHeaders(grid);
 
     board = [];
@@ -107,8 +103,8 @@ function createEmptyBoard() {
 }
 
 function generateRandomBoard() {
-    // Generate unique numbers first
     let numbers = [];
+    // Strict Unique Logic
     while(numbers.length < 25){
         let r = Math.floor(Math.random() * 25) + 1;
         if(!numbers.includes(r)) numbers.push(r);
@@ -139,7 +135,7 @@ function renderPlayableBoard(numbers) {
     const grid = document.getElementById('bingo-grid');
     grid.innerHTML = "";
     
-    // Insert B-I-N-G-O Headers first
+    // Re-add headers so they persist
     addBingoHeaders(grid);
 
     board = numbers;

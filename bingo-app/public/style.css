@@ -27,7 +27,7 @@ body { background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden
     margin: 20px 0;
 }
 
-/* --- UPDATED HEADER STYLES --- */
+/* --- CLICKABLE HEADER STYLES --- */
 .header-cell {
     width: 60px; height: 40px;
     background: #e67e22; /* Default Orange */
@@ -45,9 +45,9 @@ body { background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden
     transition: all 0.2s ease;
 }
 
-/* Style when you click/select a letter */
+/* Force Green when clicked/active */
 .header-cell.active {
-    background: #27ae60; /* Green */
+    background: #27ae60 !important;
     transform: scale(1.1);
     box-shadow: 0 0 10px #2ecc71;
     border: 2px solid white;
