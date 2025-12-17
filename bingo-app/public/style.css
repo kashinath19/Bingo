@@ -3,13 +3,13 @@
 
 body { 
     background-color: #f0f2f5; 
-    height: 100vh; /* Full Viewport Height */
+    height: 100vh; 
     width: 100vw; 
-    overflow: hidden; /* Prevent scrolling the whole page */
+    overflow: hidden; /* Prevent body scroll, handle inside containers */
     display: flex;
 }
 
-/* Login Screen - Stays on top */
+/* Login Screen */
 #login-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 1000;
@@ -18,7 +18,7 @@ body {
 .login-box input { padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 80%; }
 .login-box button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
 
-/* Main Container - Holds Game and Chat */
+/* Main Container */
 .main-container { 
     display: flex; 
     width: 100%; 
@@ -27,19 +27,20 @@ body {
 
 /* --- LEFT SIDE: GAME AREA --- */
 .game-area { 
-    flex: 1; /* Takes all available space */
+    flex: 1; 
     display: flex; 
     flex-direction: column; 
     align-items: center; 
-    justify-content: center; 
+    justify-content: center; /* Center vertically */
     padding: 10px; 
     background: #ecf0f1;
-    overflow-y: auto; /* Scroll only if absolutely necessary */
+    overflow-y: auto; /* Allow scrolling if screen is too tiny */
+    position: relative;
 }
 
-.header { text-align: center; margin-bottom: 10px; }
-.header h2 { color: #2c3e50; font-size: 1.5rem; margin-bottom: 5px; }
-.instruction { font-size: 0.9rem; color: #555; margin-top: 5px; }
+.header { text-align: center; margin-bottom: 5px; flex-shrink: 0; }
+.header h2 { color: #2c3e50; font-size: 1.5rem; margin: 0; }
+.instruction { font-size: 0.9rem; color: #555; margin-bottom: 5px; }
 
 .controls button {
     padding: 5px 10px; margin: 2px;
@@ -51,16 +52,21 @@ body {
 /* Responsive Grid Container */
 .grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 Equal columns */
+    grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     background: #34495e;
     padding: 8px;
     border-radius: 10px;
     
-    /* MAGIC SCALING: Keep board square and fit screen */
+    /* CRITICAL FIX: Limit size based on Height AND Width */
     width: 100%;
-    max-width: 450px; /* Don't get too huge on desktop */
-    aspect-ratio: 1 / 1; /* Force square shape */
+    /* This formula ensures the grid fits in width, 
+       BUT never exceeds 65% of the screen height.
+       This leaves 35% space for the Header and Bingo Button.
+    */
+    max-width: min(500px, 65vh); 
+    aspect-ratio: 1 / 1; /* Keep it square */
+    margin: 5px 0;
 }
 
 /* Header Cells (B-I-N-G-O) */
@@ -72,15 +78,16 @@ body {
     border-radius: 4px;
     cursor: pointer;
     user-select: none;
-    font-size: clamp(1rem, 4vw, 1.5rem); /* Text scales with width */
-    aspect-ratio: 5 / 3; /* Keep rectangular shape */
+    font-size: clamp(0.8rem, 3vw, 1.5rem);
+    aspect-ratio: 5 / 3; 
+    transition: all 0.2s;
 }
 
 .header-cell.active {
     background: #27ae60 !important;
     transform: scale(1.05);
     box-shadow: 0 0 8px #2ecc71;
-    border: 2px solid white;
+    border: 1px solid white;
 }
 
 /* Number Cells */
@@ -91,97 +98,92 @@ body {
     cursor: pointer;
     user-select: none;
     border-radius: 4px;
-    font-size: clamp(0.8rem, 4vw, 1.3rem); /* Text scales with width */
-    aspect-ratio: 1 / 1; /* Square cells */
+    font-size: clamp(0.8rem, 3vw, 1.2rem);
+    aspect-ratio: 1 / 1;
     position: relative;
 }
 
-/* Input for manual mode - fills the cell */
 .cell input { 
     width: 100%; height: 100%; 
     text-align: center; border: none; 
     font-size: inherit; font-weight: bold; 
-    background: transparent; 
-    padding: 0; margin: 0;
+    background: transparent; padding: 0;
 }
 
 .cell.marked { background: #e74c3c; color: white; }
 
 #bingo-btn {
-    margin-top: 10px; padding: 10px 30px; 
+    margin-top: 5px; padding: 10px 30px; 
     font-size: 1.2rem; background: #8e44ad; color: white;
     border: none; border-radius: 50px; cursor: pointer; 
     box-shadow: 0 4px #6c3483;
+    flex-shrink: 0; /* Prevent button from getting squashed */
 }
 #bingo-btn:active { transform: translateY(2px); }
 
 /* --- RIGHT SIDE: CHAT AREA --- */
 .chat-area { 
-    width: 300px; /* Fixed width on desktop */
+    width: 300px; 
     display: flex; 
     flex-direction: column; 
     background: white; 
     border-left: 1px solid #ccc; 
-    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    z-index: 10;
 }
 
 .chat-header { 
     padding: 10px; 
-    background: #2980b9; color: white; font-weight: bold; font-size: 0.9rem; 
-    display: flex; justify-content: space-between; align-items: center;
+    background: #2980b9; color: white; font-weight: bold; 
 }
 
 .messages { 
-    flex: 1; /* Takes all remaining height */
+    flex: 1; 
     padding: 10px; 
     overflow-y: auto; 
     background: #f9f9f9; 
     display: flex; flex-direction: column; gap: 6px; 
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 
 .message { padding: 6px 10px; border-radius: 10px; max-width: 90%; word-wrap: break-word; }
 .message.mine { align-self: flex-end; background: #3498db; color: white; }
 .message.theirs { align-self: flex-start; background: #e5e5ea; color: black; }
-.message.system { align-self: center; color: #7f8c8d; font-style: italic; font-size: 0.75rem; }
+.message.system { align-self: center; color: #7f8c8d; font-style: italic; font-size: 0.8rem; }
 .message.win { align-self: center; background: #f1c40f; color: black; font-weight: bold; text-align: center; width: 100%; }
 
 .chat-input { 
-    display: flex; padding: 8px; border-top: 1px solid #ddd; background: white; 
+    display: flex; padding: 10px; border-top: 1px solid #ddd; background: white; 
 }
 .chat-input input { 
     flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 20px; outline: none; 
 }
 .chat-input button { 
     margin-left: 5px; padding: 8px 15px; 
-    background: #2980b9; color: white; border: none; border-radius: 20px; 
-    cursor: pointer; font-size: 0.8rem;
+    background: #2980b9; color: white; border: none; border-radius: 20px; cursor: pointer; 
 }
 
-/* --- RESPONSIVE MOBILE VIEW --- */
-/* Triggers when screen is narrow (Mobile/Tablet) */
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    .main-container { 
-        flex-direction: column; /* Stack Game on top, Chat on bottom */
-    }
+    .main-container { flex-direction: column; }
 
-    /* Game Area adjusts */
     .game-area {
-        flex: none; /* Don't stretch infinitely */
-        height: 65%; /* Take top 65% of screen */
+        height: 65%; /* 65% Game */
         padding: 5px;
     }
-    
+
+    /* On Mobile, the grid size is based on height so it fits */
     .grid {
-        max-width: 80vh; /* Ensure it fits vertically */
+        max-width: none;
+        max-height: 55vh; /* Ensure grid fits within the 65% game area */
+        height: auto;
+        width: auto; 
+        aspect-ratio: 1/1;
     }
 
-    /* Chat Area adjusts */
     .chat-area {
-        width: 100%; /* Full width */
-        height: 35%; /* Take bottom 35% of screen */
+        width: 100%;
+        height: 35%; /* 35% Chat */
         border-left: none;
         border-top: 2px solid #2980b9;
-        min-height: 150px; /* Ensure chat is usable even on tiny screens */
     }
 }
