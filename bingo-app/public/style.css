@@ -5,7 +5,7 @@ body {
     background-color: #f0f2f5; 
     height: 100vh; 
     width: 100vw; 
-    overflow: hidden; /* Prevent body scroll, handle inside containers */
+    overflow: hidden; 
     display: flex;
 }
 
@@ -31,10 +31,10 @@ body {
     display: flex; 
     flex-direction: column; 
     align-items: center; 
-    justify-content: center; /* Center vertically */
+    justify-content: center; /* Center content vertically */
     padding: 10px; 
     background: #ecf0f1;
-    overflow-y: auto; /* Allow scrolling if screen is too tiny */
+    overflow-y: auto; /* Enable scrolling if screen is too small */
     position: relative;
 }
 
@@ -58,15 +58,16 @@ body {
     padding: 8px;
     border-radius: 10px;
     
-    /* CRITICAL FIX: Limit size based on Height AND Width */
+    /* --- CRITICAL FIX START --- */
+    /* Limit height so it leaves room for button & header */
+    max-height: 55vh; 
+    /* Limit width to match the height (Square shape) */
+    max-width: 55vh;
+    
     width: 100%;
-    /* This formula ensures the grid fits in width, 
-       BUT never exceeds 65% of the screen height.
-       This leaves 35% space for the Header and Bingo Button.
-    */
-    max-width: min(500px, 65vh); 
-    aspect-ratio: 1 / 1; /* Keep it square */
+    aspect-ratio: 1 / 1; 
     margin: 5px 0;
+    /* --- CRITICAL FIX END --- */
 }
 
 /* Header Cells (B-I-N-G-O) */
@@ -113,11 +114,14 @@ body {
 .cell.marked { background: #e74c3c; color: white; }
 
 #bingo-btn {
-    margin-top: 5px; padding: 10px 30px; 
+    margin-top: 15px; 
+    margin-bottom: 20px; /* Extra space at bottom */
+    padding: 10px 30px; 
     font-size: 1.2rem; background: #8e44ad; color: white;
     border: none; border-radius: 50px; cursor: pointer; 
     box-shadow: 0 4px #6c3483;
-    flex-shrink: 0; /* Prevent button from getting squashed */
+    flex-shrink: 0; /* Prevent button from being squashed */
+    z-index: 10;
 }
 #bingo-btn:active { transform: translateY(2px); }
 
@@ -167,22 +171,21 @@ body {
     .main-container { flex-direction: column; }
 
     .game-area {
-        height: 65%; /* 65% Game */
+        height: 65%;
         padding: 5px;
+        justify-content: flex-start; /* Start from top on mobile */
+        padding-top: 10px;
     }
 
-    /* On Mobile, the grid size is based on height so it fits */
     .grid {
-        max-width: none;
-        max-height: 55vh; /* Ensure grid fits within the 65% game area */
-        height: auto;
+        max-height: 50vh; /* Make grid slightly smaller on mobile */
+        max-width: 50vh;
         width: auto; 
-        aspect-ratio: 1/1;
     }
 
     .chat-area {
         width: 100%;
-        height: 35%; /* 35% Chat */
+        height: 35%;
         border-left: none;
         border-top: 2px solid #2980b9;
     }
