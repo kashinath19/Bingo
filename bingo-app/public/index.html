@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Multiplayer Bingo</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
     <div id="login-screen">
         <div class="login-box">
             <h1>Bingo Party</h1>
-            <input type="text" id="username-input" placeholder="Enter your name..." maxlength="15">
+            <input type="text" id="username-input" placeholder="Enter your name..." maxlength="15" />
             <button onclick="joinGame()">Join Game</button>
         </div>
     </div>
 
     <div class="main-container" id="game-container" style="display: none;">
-        
-        <div class="game-area">
+        <div class="game-area" id="game-area">
             <div class="header">
                 <h2>BINGO</h2>
                 <div class="controls">
@@ -26,19 +24,19 @@
                     <button onclick="resetBoard()">Clear / Manual</button>
                     <button id="start-manual-btn" onclick="confirmManualBoard()">Start Game</button>
                 </div>
-                <p class="instruction" id="game-status">Enter numbers 1-25 uniquely or click Random.</p>
+                <p class="instruction" id="game-status">Enter numbers 1–25 uniquely or click Random.</p>
             </div>
 
-            <div id="bingo-grid" class="grid"></div>
+            <div id="bingo-grid" class="grid" aria-label="Bingo grid"></div>
 
             <button id="bingo-btn" onclick="declareWin()" style="display:none;">I HAVE BINGO!</button>
         </div>
 
-        <div class="chat-area">
+        <div class="chat-area" id="chat-area">
             <div class="chat-header">Group Chat</div>
-            <div id="chat-messages" class="messages"></div>
+            <div id="chat-messages" class="messages" aria-live="polite"></div>
             <div class="chat-input">
-                <input type="text" id="msg-input" placeholder="Type a message...">
+                <input type="text" id="msg-input" placeholder="Type a message..." />
                 <button onclick="sendMessage()">Send</button>
             </div>
         </div>

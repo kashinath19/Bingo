@@ -1,73 +1,80 @@
 /* General Reset */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-body { 
-    background-color: #f0f2f5; 
-    height: 100vh; 
-    width: 100vw; 
-    overflow: hidden; 
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    background-color: #f0f2f5;
+    height: 100vh;
+    width: 100vw;
     display: flex;
+    overflow: hidden;
 }
 
 /* Login Screen */
 #login-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 1000;
+    background: rgba(44,62,80,0.95); display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
-.login-box { background: white; padding: 2rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-.login-box input { padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 80%; }
+.login-box { background: white; padding: 2rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 320px; max-width: 90%; }
+.login-box input { padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100%; }
 .login-box button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
 
 /* Main Container */
-.main-container { 
-    display: flex; 
-    width: 100%; 
-    height: 100%; 
+.main-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    /* allow viewport horizontal scrolling when the window is too narrow to show both columns */
+    overflow: auto;
+    scroll-behavior: smooth;
 }
 
-/* --- LEFT SIDE: GAME AREA --- */
-.game-area { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; /* Center content vertically */
-    padding: 10px; 
+/* Left: Game Area */
+.game-area {
+    flex: 1 1 auto;
+    min-width: 340px;              /* keep playable on narrow windows */
+    max-width: calc(100% - 300px); /* reserve space for chat area */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 12px;
     background: #ecf0f1;
-    overflow-y: auto; /* Enable scrolling if screen is too small */
-    position: relative;
+    overflow-y: auto;
+    gap: 8px;
 }
 
-.header { text-align: center; margin-bottom: 5px; flex-shrink: 0; }
+/* Header */
+.header { text-align: center; margin-bottom: 6px; width: 100%; max-width: 900px; }
 .header h2 { color: #2c3e50; font-size: 1.5rem; margin: 0; }
-.instruction { font-size: 0.9rem; color: #555; margin-bottom: 5px; }
+.instruction { font-size: 0.95rem; color: #555; margin-bottom: 6px; }
 
+.controls { margin-top: 8px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
 .controls button {
-    padding: 5px 10px; margin: 2px;
+    padding: 6px 10px;
     background: white; border: 1px solid #ccc; border-radius: 4px;
-    cursor: pointer; font-size: 0.8rem;
+    cursor: pointer; font-size: 0.85rem;
 }
 .controls button:hover { background: #e0e0e0; }
 
-/* Responsive Grid Container */
+/* Responsive Grid Container (keeps square) */
 .grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
+    gap: 6px;
     background: #34495e;
-    padding: 8px;
-    border-radius: 10px;
-    
-    /* --- CRITICAL FIX START --- */
-    /* Limit height so it leaves room for button & header */
-    max-height: 55vh; 
-    /* Limit width to match the height (Square shape) */
-    max-width: 55vh;
-    
-    width: 100%;
-    aspect-ratio: 1 / 1; 
-    margin: 5px 0;
-    /* --- CRITICAL FIX END --- */
+    padding: 10px;
+    border-radius: 12px;
+
+    /* make grid size responsive but always square */
+    width: min(600px, calc(100vw - 360px), 55vh);
+    max-width: 90vw;
+    aspect-ratio: 1 / 1;
+    margin: 8px 0;
 }
 
 /* Header Cells (B-I-N-G-O) */
@@ -76,17 +83,16 @@ body {
     color: white;
     font-weight: 900;
     display: flex; justify-content: center; align-items: center;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     user-select: none;
-    font-size: clamp(0.8rem, 3vw, 1.5rem);
-    aspect-ratio: 5 / 3; 
-    transition: all 0.2s;
+    font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+    aspect-ratio: 1 / 1;
+    transition: all 0.18s;
 }
-
 .header-cell.active {
     background: #27ae60 !important;
-    transform: scale(1.05);
+    transform: scale(1.04);
     box-shadow: 0 0 8px #2ecc71;
     border: 1px solid white;
 }
@@ -98,95 +104,87 @@ body {
     font-weight: bold;
     cursor: pointer;
     user-select: none;
-    border-radius: 4px;
-    font-size: clamp(0.8rem, 3vw, 1.2rem);
+    border-radius: 6px;
+    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
     aspect-ratio: 1 / 1;
     position: relative;
+    padding: 6px;
+    text-align: center;
+    line-height: 1;
 }
-
-.cell input { 
-    width: 100%; height: 100%; 
-    text-align: center; border: none; 
-    font-size: inherit; font-weight: bold; 
+.cell input {
+    width: 100%; height: 100%;
+    text-align: center; border: none;
+    font-size: inherit; font-weight: bold;
     background: transparent; padding: 0;
 }
-
 .cell.marked { background: #e74c3c; color: white; }
 
+/* Bingo button */
 #bingo-btn {
-    margin-top: 15px; 
-    margin-bottom: 20px; /* Extra space at bottom */
-    padding: 10px 30px; 
-    font-size: 1.2rem; background: #8e44ad; color: white;
-    border: none; border-radius: 50px; cursor: pointer; 
+    margin-top: 10px;
+    margin-bottom: 14px;
+    padding: 10px 28px;
+    font-size: 1.05rem;
+    background: #8e44ad; color: white;
+    border: none; border-radius: 28px; cursor: pointer;
     box-shadow: 0 4px #6c3483;
-    flex-shrink: 0; /* Prevent button from being squashed */
+    flex-shrink: 0;
     z-index: 10;
 }
 #bingo-btn:active { transform: translateY(2px); }
 
-/* --- RIGHT SIDE: CHAT AREA --- */
-.chat-area { 
-    width: 300px; 
-    display: flex; 
-    flex-direction: column; 
-    background: white; 
-    border-left: 1px solid #ccc; 
+/* Right: Chat Area */
+.chat-area {
+    flex: 0 0 300px;    /* fixed chat width so it stays at right */
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-left: 1px solid #ccc;
     z-index: 10;
+    height: 100%;
 }
 
-.chat-header { 
-    padding: 10px; 
-    background: #2980b9; color: white; font-weight: bold; 
+.chat-header {
+    padding: 12px;
+    background: #2980b9; color: white; font-weight: bold;
 }
-
-.messages { 
-    flex: 1; 
-    padding: 10px; 
-    overflow-y: auto; 
-    background: #f9f9f9; 
-    display: flex; flex-direction: column; gap: 6px; 
-    font-size: 0.9rem;
+.messages {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    display: flex; flex-direction: column; gap: 8px;
+    font-size: 0.95rem;
 }
-
-.message { padding: 6px 10px; border-radius: 10px; max-width: 90%; word-wrap: break-word; }
+.message { padding: 8px 12px; border-radius: 12px; max-width: 88%; word-wrap: break-word; }
 .message.mine { align-self: flex-end; background: #3498db; color: white; }
 .message.theirs { align-self: flex-start; background: #e5e5ea; color: black; }
-.message.system { align-self: center; color: #7f8c8d; font-style: italic; font-size: 0.8rem; }
-.message.win { align-self: center; background: #f1c40f; color: black; font-weight: bold; text-align: center; width: 100%; }
+.message.system { align-self: center; color: #7f8c8d; font-style: italic; font-size: 0.85rem; }
+.message.win { align-self: center; background: #f1c40f; color: black; font-weight: bold; text-align: center; width: 100%; border-radius: 6px; padding: 10px; }
 
-.chat-input { 
-    display: flex; padding: 10px; border-top: 1px solid #ddd; background: white; 
+.chat-input {
+    display: flex; gap: 8px; padding: 10px; border-top: 1px solid #ddd; background: white;
 }
-.chat-input input { 
-    flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 20px; outline: none; 
+.chat-input input {
+    flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 20px; outline: none;
 }
-.chat-input button { 
-    margin-left: 5px; padding: 8px 15px; 
-    background: #2980b9; color: white; border: none; border-radius: 20px; cursor: pointer; 
+.chat-input button {
+    padding: 8px 14px; background: #2980b9; color: white; border: none; border-radius: 20px; cursor: pointer;
 }
 
-/* --- MOBILE RESPONSIVE --- */
-@media (max-width: 768px) {
-    .main-container { flex-direction: column; }
-
-    .game-area {
-        height: 65%;
-        padding: 5px;
-        justify-content: flex-start; /* Start from top on mobile */
-        padding-top: 10px;
-    }
-
-    .grid {
-        max-height: 50vh; /* Make grid slightly smaller on mobile */
-        max-width: 50vh;
-        width: auto; 
-    }
-
-    .chat-area {
-        width: 100%;
-        height: 35%;
-        border-left: none;
-        border-top: 2px solid #2980b9;
-    }
+/* Small screens: keep side-by-side but allow horizontal scroll so chat remains visible at right */
+@media (max-width: 900px) {
+    .game-area { max-width: calc(100% - 260px); } /* ensure grid & area shrink to leave space for chat */
+    .grid { width: min(520px, calc(100vw - 320px)); }
 }
+
+/* Very narrow screens: allow both to be visible via horizontal scroll by ensuring min-widths */
+@media (max-width: 420px) {
+    .game-area { min-width: 300px; }
+    .grid { width: min(420px, calc(100vw - 260px)); }
+}
+
+/* Accessibility: focus styles */
+button:focus, input:focus, .cell:focus { outline: 3px solid rgba(41,128,185,0.25); outline-offset: 2px; }

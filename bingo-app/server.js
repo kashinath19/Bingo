@@ -20,10 +20,10 @@ io.on('connection', (socket) => {
     socket.on('join', (username) => {
         players[socket.id] = username;
         // Notify others
-        io.emit('chat_message', { 
-            user: 'System', 
-            text: `${username} has joined the game!`, 
-            type: 'system' 
+        io.emit('chat_message', {
+            user: 'System',
+            text: `${username} has joined the game!`,
+            type: 'system'
         });
     });
 
@@ -45,10 +45,10 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const username = players[socket.id];
         if (username) {
-            io.emit('chat_message', { 
-                user: 'System', 
-                text: `${username} left the chat.`, 
-                type: 'system' 
+            io.emit('chat_message', {
+                user: 'System',
+                text: `${username} left the chat.`,
+                type: 'system'
             });
             delete players[socket.id];
         }
