@@ -3,6 +3,7 @@ let username = "";
 let board = [];        // numbers array length 25
 let marked = [];       // boolean array length 25
 let isGameActive = false;
+let completedLines = []; // track which lines (rows/cols/diags) are complete
 
 // --- 1. Login Logic ---
 function joinGame() {
@@ -63,13 +64,11 @@ function escapeHtml(text) {
 // Add B-I-N-G-O header row
 function addBingoHeaders(gridElement) {
     const letters = ['B','I','N','G','O'];
-    letters.forEach(letter => {
+    letters.forEach((letter, index) => {
         const header = document.createElement('div');
         header.classList.add('header-cell');
         header.textContent = letter;
-        header.onclick = function() {
-            this.classList.toggle('active');
-        };
+        header.setAttribute('data-letter-index', index);
         gridElement.appendChild(header);
     });
 }
@@ -82,34 +81,77 @@ function createEmptyBoard() {
 
     board = [];
     marked = [];
+    completedLines = [];
     isGameActive = false;
     document.getElementById('bingo-btn').style.display = 'none';
     document.getElementById('start-manual-btn').style.display = 'inline-block';
-    document.getElementById('game-status').textContent = "Enter numbers 1-25 uniquely.";
+    document.getElementById('game-status').textContent = "Enter numbers 1-25 uniquely or use Random Board.";
 
-    // Create 25 input cells for manual entry
+    // Create 25 input cells for manual entry with improved UX
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
 
         const input = document.createElement('input');
-        input.type = "number";
-        input.min = 1;
-        input.max = 25;
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.pattern = "[0-9]*";
+        input.maxLength = 2;
         input.setAttribute('aria-label', `Cell ${i+1} number input`);
+        input.setAttribute('data-cell-index', i);
 
-        // Strict input enforcement
-        input.addEventListener('input', function() {
-            if (this.value === "") return;
-            let v = parseInt(this.value, 10);
-            if (isNaN(v)) { this.value = ""; return; }
-            if (v > 25) this.value = 25;
-            if (v < 1) this.value = 1;
+        // Improved input handling
+        input.addEventListener('input', function(e) {
+            let val = this.value.replace(/[^0-9]/g, '');
+            
+            if (val === "") {
+                this.value = "";
+                return;
+            }
+            
+            let num = parseInt(val, 10);
+            if (num > 25) num = 25;
+            if (num < 1 && val.length >= 1) num = 1;
+            
+            this.value = num || "";
+            
+            // Auto-focus next cell when valid number entered
+            if (this.value.length > 0 && num >= 1 && num <= 25) {
+                const nextIndex = i + 1;
+                if (nextIndex < 25) {
+                    const nextInput = document.querySelector(`input[data-cell-index="${nextIndex}"]`);
+                    if (nextInput && nextInput.value === "") {
+                        setTimeout(() => nextInput.focus(), 50);
+                    }
+                }
+            }
+        });
+
+        // Allow backspace to go to previous cell
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && this.value === '' && i > 0) {
+                const prevInput = document.querySelector(`input[data-cell-index="${i-1}"]`);
+                if (prevInput) {
+                    prevInput.focus();
+                    prevInput.select();
+                }
+            }
+        });
+
+        // Select all on focus for easy replacement
+        input.addEventListener('focus', function() {
+            this.select();
         });
 
         cell.appendChild(input);
         grid.appendChild(cell);
     }
+
+    // Focus first input
+    setTimeout(() => {
+        const firstInput = document.querySelector('input[data-cell-index="0"]');
+        if (firstInput) firstInput.focus();
+    }, 100);
 }
 
 // generate random unique numbers 1..25
@@ -128,11 +170,31 @@ function confirmManualBoard() {
     let values = [];
     let seen = new Set();
 
-    for (let input of inputs) {
+    for (let i = 0; i < inputs.length; i++) {
+        let input = inputs[i];
         let val = parseInt(input.value, 10);
-        if (isNaN(val)) return alert("Please fill all cells with numbers.");
-        if (val < 1 || val > 25) return alert(`Invalid number: ${val}. Use 1-25.`);
-        if (seen.has(val)) return alert(`Duplicate found: ${val}. Each number must be unique.`);
+        
+        if (isNaN(val) || input.value.trim() === "") {
+            input.focus();
+            input.style.border = "2px solid red";
+            setTimeout(() => input.style.border = "", 1000);
+            return alert(`Please fill cell ${i+1} with a number.`);
+        }
+        
+        if (val < 1 || val > 25) {
+            input.focus();
+            input.style.border = "2px solid red";
+            setTimeout(() => input.style.border = "", 1000);
+            return alert(`Invalid number in cell ${i+1}: ${val}. Use 1-25 only.`);
+        }
+        
+        if (seen.has(val)) {
+            input.focus();
+            input.style.border = "2px solid red";
+            setTimeout(() => input.style.border = "", 1000);
+            return alert(`Duplicate number found: ${val}. Each number must be unique!`);
+        }
+        
         seen.add(val);
         values.push(val);
     }
@@ -147,11 +209,12 @@ function renderPlayableBoard(numbers) {
 
     board = numbers.slice();
     marked = new Array(25).fill(false);
+    completedLines = [];
     isGameActive = true;
 
     document.getElementById('start-manual-btn').style.display = 'none';
     document.getElementById('bingo-btn').style.display = 'none';
-    document.getElementById('game-status').textContent = "Game On! Click numbers to mark. When a 5-in-a-row is complete the Bingo button appears.";
+    document.getElementById('game-status').textContent = "Game On! Mark numbers. Complete lines light up BINGO letters!";
 
     numbers.forEach((num, idx) => {
         const cell = document.createElement('div');
@@ -182,57 +245,104 @@ function toggleCell(cell) {
     marked[idx] = !marked[idx];
     cell.classList.toggle('marked', marked[idx]);
 
-    // check bingo after every toggle
-    const hasBingo = checkForBingo();
-    document.getElementById('bingo-btn').style.display = hasBingo ? 'block' : 'none';
+    // check and update BINGO letters
+    updateBingoLetters();
 }
 
-// check for any complete row/column/diagonal
-function checkForBingo() {
-    if (!isGameActive || !marked || marked.length !== 25) return false;
+// Update BINGO letter highlighting based on completed lines
+function updateBingoLetters() {
+    const lines = getAllCompletedLines();
+    completedLines = lines;
+    
+    // Clear all active states
+    const headers = document.querySelectorAll('.header-cell');
+    headers.forEach(h => h.classList.remove('active'));
+    
+    // Light up letters based on number of completed lines
+    const numComplete = lines.length;
+    for (let i = 0; i < Math.min(numComplete, 5); i++) {
+        const header = document.querySelector(`.header-cell[data-letter-index="${i}"]`);
+        if (header) {
+            header.classList.add('active');
+        }
+    }
+    
+    // Check if all 5 letters are lit (5 lines complete)
+    if (numComplete >= 5) {
+        // Auto-declare BINGO!
+        setTimeout(() => {
+            autoDeclareWin();
+        }, 500);
+    }
+}
 
-    // rows
+// Get all completed lines (rows, columns, diagonals)
+function getAllCompletedLines() {
+    if (!isGameActive || !marked || marked.length !== 25) return [];
+    
+    const lines = [];
+    
+    // Check rows (0-4)
     for (let r = 0; r < 5; r++) {
-        let ok = true;
+        let complete = true;
         for (let c = 0; c < 5; c++) {
-            if (!marked[r * 5 + c]) { ok = false; break; }
+            if (!marked[r * 5 + c]) {
+                complete = false;
+                break;
+            }
         }
-        if (ok) return true;
+        if (complete) lines.push(`row${r}`);
     }
-
-    // columns
+    
+    // Check columns (5-9)
     for (let c = 0; c < 5; c++) {
-        let ok = true;
+        let complete = true;
         for (let r = 0; r < 5; r++) {
-            if (!marked[r * 5 + c]) { ok = false; break; }
+            if (!marked[r * 5 + c]) {
+                complete = false;
+                break;
+            }
         }
-        if (ok) return true;
+        if (complete) lines.push(`col${c}`);
     }
-
-    // diagonal top-left -> bottom-right
+    
+    // Check diagonal top-left -> bottom-right (10)
     const diag1 = [0, 6, 12, 18, 24];
-    if (diag1.every(i => marked[i])) return true;
-
-    // diagonal top-right -> bottom-left
+    if (diag1.every(i => marked[i])) {
+        lines.push('diag1');
+    }
+    
+    // Check diagonal top-right -> bottom-left (11)
     const diag2 = [4, 8, 12, 16, 20];
-    if (diag2.every(i => marked[i])) return true;
+    if (diag2.every(i => marked[i])) {
+        lines.push('diag2');
+    }
+    
+    return lines;
+}
 
-    return false;
+// check for any complete row/column/diagonal (legacy - still used for manual button)
+function checkForBingo() {
+    return getAllCompletedLines().length >= 5;
+}
+
+function autoDeclareWin() {
+    if (!isGameActive) return;
+    
+    socket.emit('bingo_win', username);
+    document.getElementById('game-status').textContent = `🎉 ${username} got BINGO!`;
+    isGameActive = false;
+    document.getElementById('bingo-btn').style.display = 'none';
 }
 
 function declareWin() {
     if (!isGameActive) return alert("Game is not active.");
     const hasBingo = checkForBingo();
     if (!hasBingo) {
-        return alert("No valid Bingo yet. Complete any 5-in-a-row (row, column, or diagonal) to enable the Bingo button.");
+        return alert("You need 5 complete lines to declare BINGO!");
     }
     socket.emit('bingo_win', username);
-    // optional: announce locally
     document.getElementById('game-status').textContent = `🎉 ${username} declared Bingo!`;
-    // disable further marking to avoid duplicate wins (optional)
     isGameActive = false;
     document.getElementById('bingo-btn').style.display = 'none';
 }
-
-// When server broadcasts a bingo win message it already produces a 'win' type and we display that in chat.
-// Additional client behavior could be added here if needed.

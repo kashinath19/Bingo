@@ -20,8 +20,10 @@ body {
     background: rgba(44,62,80,0.95); display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
 .login-box { background: white; padding: 2rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 320px; max-width: 90%; }
+.login-box h1 { margin-bottom: 1rem; color: #2c3e50; }
 .login-box input { padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100%; }
-.login-box button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
+.login-box button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; width: 100%; }
+.login-box button:hover { background: #229954; }
 
 /* Main Container */
 .main-container {
@@ -51,15 +53,20 @@ body {
 /* Header */
 .header { text-align: center; margin-bottom: 6px; width: 100%; max-width: 900px; }
 .header h2 { color: #2c3e50; font-size: 1.5rem; margin: 0; }
-.instruction { font-size: 0.95rem; color: #555; margin-bottom: 6px; }
+.instruction { font-size: 0.95rem; color: #555; margin-bottom: 6px; line-height: 1.4; }
 
 .controls { margin-top: 8px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
 .controls button {
-    padding: 6px 10px;
-    background: white; border: 1px solid #ccc; border-radius: 4px;
-    cursor: pointer; font-size: 0.85rem;
+    padding: 8px 14px;
+    background: white; 
+    border: 1px solid #ccc; 
+    border-radius: 4px;
+    cursor: pointer; 
+    font-size: 0.9rem;
+    transition: all 0.2s;
 }
-.controls button:hover { background: #e0e0e0; }
+.controls button:hover { background: #e0e0e0; transform: translateY(-1px); }
+.controls button:active { transform: translateY(0); }
 
 /* Responsive Grid Container (keeps square) */
 .grid {
@@ -82,57 +89,122 @@ body {
     background: #e67e22;
     color: white;
     font-weight: 900;
-    display: flex; justify-content: center; align-items: center;
-    border-radius: 6px;
-    cursor: pointer;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    border-radius: 8px;
     user-select: none;
-    font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+    font-size: clamp(1rem, 2.5vw, 1.6rem);
     aspect-ratio: 1 / 1;
-    transition: all 0.18s;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+
 .header-cell.active {
     background: #27ae60 !important;
-    transform: scale(1.04);
-    box-shadow: 0 0 8px #2ecc71;
-    border: 1px solid white;
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 4px 8px rgba(0,0,0,0.3);
+    animation: bingoGlow 0.5s ease-out;
+}
+
+@keyframes bingoGlow {
+    0% { 
+        transform: scale(1) rotate(0deg); 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    50% { 
+        transform: scale(1.2) rotate(10deg); 
+        box-shadow: 0 0 30px rgba(46, 204, 113, 1);
+    }
+    100% { 
+        transform: scale(1.1) rotate(5deg); 
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+    }
 }
 
 /* Number Cells */
 .cell {
     background: white;
-    display: flex; justify-content: center; align-items: center;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
     font-weight: bold;
     cursor: pointer;
     user-select: none;
-    border-radius: 6px;
-    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
+    border-radius: 8px;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
     aspect-ratio: 1 / 1;
     position: relative;
     padding: 6px;
     text-align: center;
     line-height: 1;
+    transition: all 0.15s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+.cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
 .cell input {
-    width: 100%; height: 100%;
-    text-align: center; border: none;
-    font-size: inherit; font-weight: bold;
-    background: transparent; padding: 0;
+    width: 100%; 
+    height: 100%;
+    text-align: center; 
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: inherit; 
+    font-weight: bold;
+    background: white; 
+    padding: 0;
+    transition: border-color 0.2s;
 }
-.cell.marked { background: #e74c3c; color: white; }
+
+.cell input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.cell input:valid {
+    border-color: #27ae60;
+}
+
+.cell.marked { 
+    background: #e74c3c; 
+    color: white; 
+    transform: scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
 
 /* Bingo button */
 #bingo-btn {
     margin-top: 10px;
     margin-bottom: 14px;
-    padding: 10px 28px;
-    font-size: 1.05rem;
-    background: #8e44ad; color: white;
-    border: none; border-radius: 28px; cursor: pointer;
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    background: #8e44ad; 
+    color: white;
+    border: none; 
+    border-radius: 28px; 
+    cursor: pointer;
     box-shadow: 0 4px #6c3483;
     flex-shrink: 0;
     z-index: 10;
+    font-weight: bold;
+    transition: all 0.2s;
 }
-#bingo-btn:active { transform: translateY(2px); }
+
+#bingo-btn:hover {
+    background: #9b59b6;
+    transform: translateY(-2px);
+    box-shadow: 0 6px #6c3483;
+}
+
+#bingo-btn:active { 
+    transform: translateY(2px); 
+    box-shadow: 0 2px #6c3483;
+}
 
 /* Right: Chat Area */
 .chat-area {
@@ -148,30 +220,113 @@ body {
 
 .chat-header {
     padding: 12px;
-    background: #2980b9; color: white; font-weight: bold;
+    background: #2980b9; 
+    color: white; 
+    font-weight: bold;
+    text-align: center;
 }
+
 .messages {
     flex: 1;
     padding: 12px;
     overflow-y: auto;
     background: #f9f9f9;
-    display: flex; flex-direction: column; gap: 8px;
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px;
     font-size: 0.95rem;
 }
-.message { padding: 8px 12px; border-radius: 12px; max-width: 88%; word-wrap: break-word; }
-.message.mine { align-self: flex-end; background: #3498db; color: white; }
-.message.theirs { align-self: flex-start; background: #e5e5ea; color: black; }
-.message.system { align-self: center; color: #7f8c8d; font-style: italic; font-size: 0.85rem; }
-.message.win { align-self: center; background: #f1c40f; color: black; font-weight: bold; text-align: center; width: 100%; border-radius: 6px; padding: 10px; }
+
+.message { 
+    padding: 8px 12px; 
+    border-radius: 12px; 
+    max-width: 88%; 
+    word-wrap: break-word; 
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.mine { 
+    align-self: flex-end; 
+    background: #3498db; 
+    color: white; 
+}
+
+.message.theirs { 
+    align-self: flex-start; 
+    background: #e5e5ea; 
+    color: black; 
+}
+
+.message.system { 
+    align-self: center; 
+    color: #7f8c8d; 
+    font-style: italic; 
+    font-size: 0.85rem; 
+    background: transparent;
+}
+
+.message.win { 
+    align-self: center; 
+    background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%); 
+    color: #000; 
+    font-weight: bold; 
+    text-align: center; 
+    width: 100%; 
+    border-radius: 8px; 
+    padding: 12px; 
+    box-shadow: 0 4px 8px rgba(241, 196, 15, 0.3);
+    animation: winPulse 0.6s ease-out;
+}
+
+@keyframes winPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
 
 .chat-input {
-    display: flex; gap: 8px; padding: 10px; border-top: 1px solid #ddd; background: white;
+    display: flex; 
+    gap: 8px; 
+    padding: 10px; 
+    border-top: 1px solid #ddd; 
+    background: white;
 }
+
 .chat-input input {
-    flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 20px; outline: none;
+    flex: 1; 
+    padding: 8px 12px; 
+    border: 1px solid #ccc; 
+    border-radius: 20px; 
+    outline: none;
+    transition: border-color 0.2s;
 }
+
+.chat-input input:focus {
+    border-color: #2980b9;
+}
+
 .chat-input button {
-    padding: 8px 14px; background: #2980b9; color: white; border: none; border-radius: 20px; cursor: pointer;
+    padding: 8px 16px; 
+    background: #2980b9; 
+    color: white; 
+    border: none; 
+    border-radius: 20px; 
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-input button:hover {
+    background: #3498db;
 }
 
 /* Small screens: keep side-by-side but allow horizontal scroll so chat remains visible at right */
@@ -187,4 +342,7 @@ body {
 }
 
 /* Accessibility: focus styles */
-button:focus, input:focus, .cell:focus { outline: 3px solid rgba(41,128,185,0.25); outline-offset: 2px; }
+button:focus, input:focus, .cell:focus { 
+    outline: 3px solid rgba(41,128,185,0.25); 
+    outline-offset: 2px; 
+}
