@@ -5,7 +5,22 @@ let marked = [];       // boolean array length 25
 let isGameActive = false;
 let completedLines = []; // track which lines (rows/cols/diags) are complete
 
-// --- 1. Login Logic ---
+// ========================================
+// XOXO Game State
+// ========================================
+let xoxoBoard = Array(9).fill('');
+let xoxoCurrentPlayer = 'X';
+let xoxoGameActive = false;
+let xoxoGameOver = false;
+let xoxoRoomId = null;
+let xoxoMySymbol = null; // 'X' or 'O'
+let xoxoOpponentName = '';
+let xoxoIsMultiplayer = false;
+let xoxoIsSearching = false;
+
+// ========================================
+// 1. Login Logic
+// ========================================
 function joinGame() {
     const input = document.getElementById('username-input');
     if (input.value.trim() === "") return alert("Please enter a name!");
@@ -16,9 +31,34 @@ function joinGame() {
 
     socket.emit('join', username);
     createEmptyBoard();
+    initXOXOGame();
 }
 
-// --- 2. Chat Logic ---
+// Allow Enter key to join
+document.getElementById('username-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') joinGame();
+});
+
+// ========================================
+// 2. Game Switcher Logic
+// ========================================
+let currentGame = 'bingo';
+
+function switchGame(game) {
+    currentGame = game;
+
+    // Update tab styling
+    document.getElementById('bingo-tab').classList.toggle('active', game === 'bingo');
+    document.getElementById('xoxo-tab').classList.toggle('active', game === 'xoxo');
+
+    // Show/hide game areas
+    document.getElementById('game-area').style.display = game === 'bingo' ? 'flex' : 'none';
+    document.getElementById('xoxo-area').style.display = game === 'xoxo' ? 'flex' : 'none';
+}
+
+// ========================================
+// 3. Chat Logic
+// ========================================
 function sendMessage() {
     const input = document.getElementById('msg-input');
     if (input.value.trim() !== "") {
@@ -28,7 +68,7 @@ function sendMessage() {
     }
 }
 
-document.getElementById('msg-input').addEventListener("keypress", function(event) {
+document.getElementById('msg-input').addEventListener("keypress", function (event) {
     if (event.key === "Enter") sendMessage();
 });
 
@@ -44,6 +84,9 @@ socket.on('chat_message', (data) => {
     } else if (data.type === 'win') {
         msgDiv.classList.add('win');
         msgDiv.textContent = data.text;
+    } else if (data.type === 'xoxo_result') {
+        msgDiv.classList.add('xoxo_result');
+        msgDiv.textContent = data.text;
     } else {
         msgDiv.classList.add(data.user === username ? 'mine' : 'theirs');
         msgDiv.innerHTML = `<strong>${escapeHtml(data.user)}:</strong> ${escapeHtml(data.text)}`;
@@ -53,17 +96,422 @@ socket.on('chat_message', (data) => {
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// very small helper to avoid injecting markup into chat
+// Escape HTML to prevent XSS
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// --- 3. Bingo Logic ---
+// ========================================
+// 4. XOXO (Tic-Tac-Toe) Game Logic
+// ========================================
+function initXOXOGame() {
+    const grid = document.getElementById('xoxo-grid');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('xoxo-cell');
+        cell.setAttribute('data-index', i);
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('aria-label', `Cell ${i + 1}`);
+
+        cell.addEventListener('click', () => handleXOXOCellClick(i));
+        cell.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleXOXOCellClick(i);
+            }
+        });
+
+        grid.appendChild(cell);
+    }
+
+    // Reset to initial state
+    resetXOXOLocalState();
+    updateXOXOUI();
+}
+
+function resetXOXOLocalState() {
+    xoxoBoard = Array(9).fill('');
+    xoxoCurrentPlayer = 'X';
+    xoxoGameActive = false;
+    xoxoGameOver = false;
+    xoxoRoomId = null;
+    xoxoMySymbol = null;
+    xoxoOpponentName = '';
+    xoxoIsMultiplayer = false;
+    xoxoIsSearching = false;
+}
+
+function updateXOXOUI() {
+    const statusDiv = document.getElementById('xoxo-status');
+    const resultDiv = document.getElementById('xoxo-result');
+    const findMatchBtn = document.getElementById('xoxo-find-match');
+    const newGameBtn = document.getElementById('xoxo-new-game');
+    const leaveGameBtn = document.getElementById('xoxo-leave-game');
+    const gameLockedOverlay = document.getElementById('xoxo-game-locked');
+
+    // Clear result
+    resultDiv.textContent = '';
+    resultDiv.className = 'xoxo-result';
+
+    // Hide overlay by default
+    if (gameLockedOverlay) {
+        gameLockedOverlay.style.display = 'none';
+    }
+
+    if (xoxoIsSearching) {
+        statusDiv.textContent = '🔍 Searching for opponent...';
+        statusDiv.style.color = '#f39c12';
+        if (findMatchBtn) findMatchBtn.style.display = 'none';
+        if (newGameBtn) newGameBtn.style.display = 'none';
+        if (leaveGameBtn) leaveGameBtn.style.display = 'none';
+    } else if (xoxoIsMultiplayer && xoxoRoomId) {
+        if (xoxoGameOver) {
+            // Game ended state
+            if (leaveGameBtn) leaveGameBtn.style.display = 'inline-block';
+            if (findMatchBtn) findMatchBtn.style.display = 'none';
+            if (newGameBtn) newGameBtn.style.display = 'inline-block';
+        } else {
+            // Game in progress
+            if (xoxoCurrentPlayer === xoxoMySymbol) {
+                statusDiv.textContent = `🎯 Your Turn (${xoxoMySymbol})`;
+                statusDiv.style.color = '#2ecc71';
+            } else {
+                statusDiv.textContent = `⏳ ${xoxoOpponentName}'s Turn (${xoxoCurrentPlayer})`;
+                statusDiv.style.color = '#e67e22';
+            }
+            if (findMatchBtn) findMatchBtn.style.display = 'none';
+            if (newGameBtn) newGameBtn.style.display = 'none';
+            if (leaveGameBtn) leaveGameBtn.style.display = 'inline-block';
+        }
+    } else {
+        // Not in a game
+        statusDiv.textContent = 'Find an opponent to play!';
+        statusDiv.style.color = 'rgba(255,255,255,0.9)';
+        if (findMatchBtn) findMatchBtn.style.display = 'inline-block';
+        if (newGameBtn) newGameBtn.style.display = 'none';
+        if (leaveGameBtn) leaveGameBtn.style.display = 'none';
+    }
+}
+
+function findXOXOMatch() {
+    if (xoxoIsSearching || xoxoIsMultiplayer) return;
+
+    xoxoIsSearching = true;
+    socket.emit('xoxo_find_match');
+    updateXOXOUI();
+}
+
+function cancelXOXOSearch() {
+    if (!xoxoIsSearching) return;
+
+    socket.emit('xoxo_cancel_search');
+    xoxoIsSearching = false;
+    updateXOXOUI();
+}
+
+function startNewXOXOGame() {
+    if (xoxoIsMultiplayer && xoxoRoomId) {
+        // Request rematch from server
+        socket.emit('xoxo_new_game', { roomId: xoxoRoomId });
+    } else {
+        // Start searching for new match
+        resetXOXOLocalState();
+        clearXOXOBoard();
+        updateXOXOUI();
+        findXOXOMatch();
+    }
+}
+
+function leaveXOXOGame() {
+    if (xoxoRoomId) {
+        socket.emit('xoxo_leave_game', { roomId: xoxoRoomId });
+    }
+    resetXOXOLocalState();
+    clearXOXOBoard();
+    updateXOXOUI();
+}
+
+function clearXOXOBoard() {
+    const cells = document.querySelectorAll('.xoxo-cell');
+    cells.forEach(cell => {
+        cell.textContent = '';
+        cell.className = 'xoxo-cell';
+    });
+
+    const gameGrid = document.getElementById('xoxo-grid');
+    gameGrid.classList.remove('game-locked');
+
+    const overlay = document.getElementById('xoxo-game-locked');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function handleXOXOCellClick(index) {
+    // Multiplayer game logic
+    if (!xoxoIsMultiplayer || !xoxoRoomId) {
+        // Not in a multiplayer game - prompt to find match
+        const statusDiv = document.getElementById('xoxo-status');
+        statusDiv.textContent = 'Click "Find Match" to play!';
+        statusDiv.style.color = '#f39c12';
+        return;
+    }
+
+    if (xoxoGameOver) {
+        return; // Game is locked
+    }
+
+    if (xoxoCurrentPlayer !== xoxoMySymbol) {
+        // Not my turn
+        const statusDiv = document.getElementById('xoxo-status');
+        statusDiv.textContent = `⏳ Wait for ${xoxoOpponentName}'s move`;
+        statusDiv.style.color = '#e74c3c';
+        return;
+    }
+
+    if (xoxoBoard[index] !== '') {
+        return; // Cell already taken
+    }
+
+    // Send move to server
+    socket.emit('xoxo_move', {
+        roomId: xoxoRoomId,
+        cellIndex: index
+    });
+}
+
+function renderXOXOBoard() {
+    const cells = document.querySelectorAll('.xoxo-cell');
+    cells.forEach((cell, index) => {
+        const value = xoxoBoard[index];
+        cell.textContent = value;
+        cell.className = 'xoxo-cell';
+
+        if (value !== '') {
+            cell.classList.add('taken');
+            cell.classList.add(value.toLowerCase());
+        }
+    });
+}
+
+function highlightWinningCells(pattern) {
+    if (!pattern) return;
+
+    pattern.forEach(index => {
+        const cell = document.querySelector(`.xoxo-cell[data-index="${index}"]`);
+        if (cell) {
+            cell.classList.add('winning');
+        }
+    });
+}
+
+function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
+    xoxoGameActive = false;
+    xoxoGameOver = true;
+
+    const statusDiv = document.getElementById('xoxo-status');
+    const resultDiv = document.getElementById('xoxo-result');
+    const gameGrid = document.getElementById('xoxo-grid');
+
+    // Add locked class to grid
+    gameGrid.classList.add('game-locked');
+
+    // Disable all cells
+    const cells = document.querySelectorAll('.xoxo-cell');
+    cells.forEach(cell => {
+        cell.classList.add('locked');
+    });
+
+    // Show game locked overlay
+    let overlay = document.getElementById('xoxo-game-locked');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'xoxo-game-locked';
+        overlay.className = 'game-locked-overlay';
+        document.getElementById('xoxo-area').appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    // Display winner/loser messages
+    if (winnerSymbol === 'draw') {
+        statusDiv.textContent = "🤝 Game Over — It's a Draw!";
+        statusDiv.style.color = '#f39c12';
+        resultDiv.textContent = "🤝 It's a Draw!";
+        resultDiv.className = 'xoxo-result draw';
+        overlay.innerHTML = '<div class="overlay-content draw">🤝 DRAW</div>';
+    } else {
+        // Highlight winning row
+        highlightWinningCells(pattern);
+
+        const amIWinner = winnerInfo && (winnerInfo.socketId === socket.id);
+
+        if (amIWinner) {
+            // Winner screen
+            statusDiv.textContent = `🎉 You Won!`;
+            statusDiv.style.color = '#2ecc71';
+            resultDiv.textContent = `🎉 You Won! Player ${winnerSymbol}`;
+            resultDiv.className = 'xoxo-result win winner-self';
+            overlay.innerHTML = `<div class="overlay-content winner">🎉 YOU WON!</div>`;
+        } else {
+            // Loser/Opponent screen
+            const winnerName = winnerInfo ? winnerInfo.username : `Player ${winnerSymbol}`;
+            statusDiv.textContent = `❌ Game Over — ${winnerName} Won`;
+            statusDiv.style.color = '#e74c3c';
+            resultDiv.textContent = `❌ You Lost. ${winnerName} Won`;
+            resultDiv.className = 'xoxo-result win loser';
+            overlay.innerHTML = `<div class="overlay-content loser">❌ YOU LOST<br><small>${winnerName} Won</small></div>`;
+        }
+    }
+
+    updateXOXOUI();
+}
+
+// ========================================
+// XOXO Socket Event Handlers
+// ========================================
+
+socket.on('xoxo_waiting', (data) => {
+    const statusDiv = document.getElementById('xoxo-status');
+    statusDiv.textContent = `🔍 ${data.message}`;
+    statusDiv.style.color = '#f39c12';
+});
+
+socket.on('xoxo_search_cancelled', () => {
+    xoxoIsSearching = false;
+    updateXOXOUI();
+});
+
+socket.on('xoxo_already_in_game', (data) => {
+    const statusDiv = document.getElementById('xoxo-status');
+    statusDiv.textContent = '⚠️ You are already in a game!';
+    statusDiv.style.color = '#e74c3c';
+});
+
+socket.on('xoxo_game_start', (data) => {
+    xoxoIsSearching = false;
+    xoxoIsMultiplayer = true;
+    xoxoRoomId = data.roomId;
+    xoxoBoard = data.board;
+    xoxoCurrentPlayer = data.currentPlayer;
+    xoxoGameActive = true;
+    xoxoGameOver = false;
+
+    // Determine my symbol and opponent
+    if (data.players.X.socketId === socket.id) {
+        xoxoMySymbol = 'X';
+        xoxoOpponentName = data.players.O.username;
+    } else {
+        xoxoMySymbol = 'O';
+        xoxoOpponentName = data.players.X.username;
+    }
+
+    clearXOXOBoard();
+    renderXOXOBoard();
+    updateXOXOUI();
+
+    // Switch to XOXO tab if not already there
+    if (currentGame !== 'xoxo') {
+        switchGame('xoxo');
+    }
+});
+
+socket.on('xoxo_state_update', (data) => {
+    xoxoBoard = data.board;
+    xoxoCurrentPlayer = data.currentPlayer;
+
+    renderXOXOBoard();
+    updateXOXOUI();
+});
+
+socket.on('xoxo_game_end', (data) => {
+    xoxoBoard = data.board;
+    renderXOXOBoard();
+
+    lockXOXOGame(data.winner, data.winnerInfo, data.loserInfo, data.winningPattern);
+});
+
+socket.on('xoxo_game_restart', (data) => {
+    xoxoBoard = data.board;
+    xoxoCurrentPlayer = data.currentPlayer;
+    xoxoGameActive = true;
+    xoxoGameOver = false;
+
+    clearXOXOBoard();
+    renderXOXOBoard();
+    updateXOXOUI();
+});
+
+socket.on('xoxo_opponent_left', (data) => {
+    const statusDiv = document.getElementById('xoxo-status');
+    const resultDiv = document.getElementById('xoxo-result');
+
+    xoxoGameActive = false;
+    xoxoGameOver = true;
+
+    statusDiv.textContent = `🚪 ${data.username} left the game`;
+    statusDiv.style.color = '#e74c3c';
+    resultDiv.textContent = `${data.username} left. You win by default! 🏆`;
+    resultDiv.className = 'xoxo-result win';
+
+    // Lock the game
+    const gameGrid = document.getElementById('xoxo-grid');
+    gameGrid.classList.add('game-locked');
+
+    setTimeout(() => {
+        resetXOXOLocalState();
+        clearXOXOBoard();
+        updateXOXOUI();
+    }, 3000);
+});
+
+socket.on('xoxo_opponent_disconnected', (data) => {
+    const statusDiv = document.getElementById('xoxo-status');
+    const resultDiv = document.getElementById('xoxo-result');
+
+    xoxoGameActive = false;
+    xoxoGameOver = true;
+
+    statusDiv.textContent = `📡 ${data.disconnectedPlayer} disconnected`;
+    statusDiv.style.color = '#e74c3c';
+    resultDiv.textContent = `${data.winner} wins by default! 🏆`;
+    resultDiv.className = 'xoxo-result win';
+
+    // Lock the game
+    const gameGrid = document.getElementById('xoxo-grid');
+    gameGrid.classList.add('game-locked');
+
+    setTimeout(() => {
+        resetXOXOLocalState();
+        clearXOXOBoard();
+        updateXOXOUI();
+    }, 3000);
+});
+
+socket.on('xoxo_invalid_move', (data) => {
+    const statusDiv = document.getElementById('xoxo-status');
+    statusDiv.textContent = `⚠️ ${data.message}`;
+    statusDiv.style.color = '#e74c3c';
+
+    setTimeout(() => {
+        updateXOXOUI();
+    }, 1500);
+});
+
+socket.on('xoxo_result_payload', (data) => {
+    // This can be used for external integrations
+    console.log('XOXO Result Payload:', data);
+    // Example: send to analytics, save to database, etc.
+});
+
+// ========================================
+// 5. Bingo Logic
+// ========================================
 // Add B-I-N-G-O header row
 function addBingoHeaders(gridElement) {
-    const letters = ['B','I','N','G','O'];
+    const letters = ['B', 'I', 'N', 'G', 'O'];
     letters.forEach((letter, index) => {
         const header = document.createElement('div');
         header.classList.add('header-cell');
@@ -97,24 +545,24 @@ function createEmptyBoard() {
         input.inputMode = "numeric";
         input.pattern = "[0-9]*";
         input.maxLength = 2;
-        input.setAttribute('aria-label', `Cell ${i+1} number input`);
+        input.setAttribute('aria-label', `Cell ${i + 1} number input`);
         input.setAttribute('data-cell-index', i);
 
         // Improved input handling
-        input.addEventListener('input', function(e) {
+        input.addEventListener('input', function (e) {
             let val = this.value.replace(/[^0-9]/g, '');
-            
+
             if (val === "") {
                 this.value = "";
                 return;
             }
-            
+
             let num = parseInt(val, 10);
             if (num > 25) num = 25;
             if (num < 1 && val.length >= 1) num = 1;
-            
+
             this.value = num || "";
-            
+
             // Auto-focus next cell when valid number entered
             if (this.value.length > 0 && num >= 1 && num <= 25) {
                 const nextIndex = i + 1;
@@ -128,9 +576,9 @@ function createEmptyBoard() {
         });
 
         // Allow backspace to go to previous cell
-        input.addEventListener('keydown', function(e) {
+        input.addEventListener('keydown', function (e) {
             if (e.key === 'Backspace' && this.value === '' && i > 0) {
-                const prevInput = document.querySelector(`input[data-cell-index="${i-1}"]`);
+                const prevInput = document.querySelector(`input[data-cell-index="${i - 1}"]`);
                 if (prevInput) {
                     prevInput.focus();
                     prevInput.select();
@@ -139,7 +587,7 @@ function createEmptyBoard() {
         });
 
         // Select all on focus for easy replacement
-        input.addEventListener('focus', function() {
+        input.addEventListener('focus', function () {
             this.select();
         });
 
@@ -173,28 +621,28 @@ function confirmManualBoard() {
     for (let i = 0; i < inputs.length; i++) {
         let input = inputs[i];
         let val = parseInt(input.value, 10);
-        
+
         if (isNaN(val) || input.value.trim() === "") {
             input.focus();
             input.style.border = "2px solid red";
             setTimeout(() => input.style.border = "", 1000);
-            return alert(`Please fill cell ${i+1} with a number.`);
+            return alert(`Please fill cell ${i + 1} with a number.`);
         }
-        
+
         if (val < 1 || val > 25) {
             input.focus();
             input.style.border = "2px solid red";
             setTimeout(() => input.style.border = "", 1000);
-            return alert(`Invalid number in cell ${i+1}: ${val}. Use 1-25 only.`);
+            return alert(`Invalid number in cell ${i + 1}: ${val}. Use 1-25 only.`);
         }
-        
+
         if (seen.has(val)) {
             input.focus();
             input.style.border = "2px solid red";
             setTimeout(() => input.style.border = "", 1000);
             return alert(`Duplicate number found: ${val}. Each number must be unique!`);
         }
-        
+
         seen.add(val);
         values.push(val);
     }
@@ -253,11 +701,11 @@ function toggleCell(cell) {
 function updateBingoLetters() {
     const lines = getAllCompletedLines();
     completedLines = lines;
-    
+
     // Clear all active states
     const headers = document.querySelectorAll('.header-cell');
     headers.forEach(h => h.classList.remove('active'));
-    
+
     // Light up letters based on number of completed lines
     const numComplete = lines.length;
     for (let i = 0; i < Math.min(numComplete, 5); i++) {
@@ -266,7 +714,7 @@ function updateBingoLetters() {
             header.classList.add('active');
         }
     }
-    
+
     // Check if all 5 letters are lit (5 lines complete)
     if (numComplete >= 5) {
         // Auto-declare BINGO!
@@ -279,9 +727,9 @@ function updateBingoLetters() {
 // Get all completed lines (rows, columns, diagonals)
 function getAllCompletedLines() {
     if (!isGameActive || !marked || marked.length !== 25) return [];
-    
+
     const lines = [];
-    
+
     // Check rows (0-4)
     for (let r = 0; r < 5; r++) {
         let complete = true;
@@ -293,7 +741,7 @@ function getAllCompletedLines() {
         }
         if (complete) lines.push(`row${r}`);
     }
-    
+
     // Check columns (5-9)
     for (let c = 0; c < 5; c++) {
         let complete = true;
@@ -305,19 +753,19 @@ function getAllCompletedLines() {
         }
         if (complete) lines.push(`col${c}`);
     }
-    
+
     // Check diagonal top-left -> bottom-right (10)
     const diag1 = [0, 6, 12, 18, 24];
     if (diag1.every(i => marked[i])) {
         lines.push('diag1');
     }
-    
+
     // Check diagonal top-right -> bottom-left (11)
     const diag2 = [4, 8, 12, 16, 20];
     if (diag2.every(i => marked[i])) {
         lines.push('diag2');
     }
-    
+
     return lines;
 }
 
@@ -328,7 +776,7 @@ function checkForBingo() {
 
 function autoDeclareWin() {
     if (!isGameActive) return;
-    
+
     socket.emit('bingo_win', username);
     document.getElementById('game-status').textContent = `🎉 ${username} got BINGO!`;
     isGameActive = false;
