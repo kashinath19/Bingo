@@ -63,12 +63,10 @@ function initMobileChatToggle() {
             // Clear notification indicator when expanded
             chatArea.classList.remove('has-new-message');
 
-            const messages = document.getElementById('chat-messages');
-            if (messages) {
-                setTimeout(() => {
-                    messages.scrollTop = messages.scrollHeight;
-                }, 350); // Wait for animation
-            }
+            // Use scrollChatToBottom with delay for animation
+            setTimeout(() => {
+                scrollChatToBottom();
+            }, 350);
         }
     });
 
@@ -77,6 +75,10 @@ function initMobileChatToggle() {
         chatInput.addEventListener('focus', function () {
             if (isMobile() && !chatArea.classList.contains('chat-expanded')) {
                 chatArea.classList.add('chat-expanded');
+                // Scroll to bottom after expansion animation
+                setTimeout(() => {
+                    scrollChatToBottom();
+                }, 350);
             }
         });
     }
@@ -154,11 +156,18 @@ socket.on('chat_message', (data) => {
         msgDiv.textContent = data.text;
     } else {
         msgDiv.classList.add(data.user === username ? 'mine' : 'theirs');
-        msgDiv.innerHTML = `<strong>${escapeHtml(data.user)}:</strong> ${escapeHtml(data.text)}`;
+        // For others' messages, show username above message text
+        if (data.user !== username) {
+            msgDiv.innerHTML = `<strong>${escapeHtml(data.user)}</strong>${escapeHtml(data.text)}`;
+        } else {
+            msgDiv.textContent = data.text;
+        }
     }
 
     chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Auto-scroll to bottom - ensure new messages are always visible
+    scrollChatToBottom(chatBox);
 
     // Mobile notification: show indicator when collapsed and new message arrives
     const isMobile = window.innerWidth <= 768;
@@ -167,6 +176,17 @@ socket.on('chat_message', (data) => {
         chatArea.classList.add('has-new-message');
     }
 });
+
+// Scroll chat to bottom with smooth behavior
+function scrollChatToBottom(chatBox) {
+    if (!chatBox) chatBox = document.getElementById('chat-messages');
+    if (!chatBox) return;
+
+    // Use requestAnimationFrame for reliable scroll after DOM update
+    requestAnimationFrame(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+}
 
 // Escape HTML to prevent XSS
 function escapeHtml(text) {
