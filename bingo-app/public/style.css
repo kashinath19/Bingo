@@ -936,20 +936,21 @@ body {
 
 /* ========================================
    Mobile Responsive - 768px and below
-   COMPLETE REDESIGN: Fixed Chat Panel at Bottom
+   VERTICAL STACK: Game Board on Top, Chat Below
+   NO OVERLAP - Clean Flexbox Layout
    ======================================== */
 
-/* CSS Custom Properties for Mobile Chat */
+/* CSS Custom Properties for Mobile Layout */
 :root {
-    --chat-collapsed-height: 52px;
-    --chat-expanded-height: 45vh;
-    --chat-expanded-height-small: 50vh;
+    --mobile-chat-height: 35vh;
+    --mobile-chat-min-height: 180px;
+    --mobile-game-area: 1;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (max-width: 768px) {
 
-    /* Prevent body scroll, use fixed layout */
+    /* Fix body to viewport */
     body {
         position: fixed;
         top: 0;
@@ -959,23 +960,28 @@ body {
         overflow: hidden;
     }
 
+    /* Main Container - Vertical Stack */
     .main-container {
+        display: flex;
         flex-direction: column;
-        overflow: hidden;
+        width: 100%;
         height: 100%;
         height: 100dvh;
+        overflow: hidden;
         position: relative;
     }
 
-    /* Games Wrapper - Takes remaining space above chat */
+    /* ========================================
+       Games Wrapper - Top Section (60-65%)
+       ======================================== */
     .games-wrapper {
-        flex: 1 1 auto;
+        flex: 1 1 60%;
         min-height: 0;
-        overflow: hidden;
+        max-height: 65%;
         display: flex;
         flex-direction: column;
-        /* Account for fixed chat at bottom */
-        padding-bottom: var(--chat-collapsed-height);
+        overflow: hidden;
+        /* NO padding-bottom - chat is below, not fixed */
     }
 
     /* Game areas scroll independently */
@@ -985,104 +991,13 @@ body {
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-    }
-
-    /* ========================================
-       Fixed Chat Panel at Bottom (WhatsApp-style)
-       ======================================== */
-    .chat-area {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        max-width: 100%;
-        min-width: 100%;
-        height: var(--chat-collapsed-height);
-        max-height: 100%;
-        border-left: none;
-        border-top: none;
-        border-radius: 20px 20px 0 0;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-        z-index: 100;
-        display: flex;
-        flex-direction: column;
-        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        /* Safe area for notch devices */
-        padding-bottom: var(--safe-area-bottom);
-    }
-
-    /* Expanded chat state */
-    .chat-area.chat-expanded {
-        height: var(--chat-expanded-height);
-    }
-
-    /* Chat Header - Always visible, acts as toggle */
-    .chat-area .chat-header {
-        flex-shrink: 0;
-        padding: 14px 16px;
-        font-size: 1rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        position: relative;
-        border-radius: 20px 20px 0 0;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Expand/Collapse indicator */
-    .chat-area .chat-header::after {
-        content: '';
-        position: absolute;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 36px;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.4);
-        border-radius: 2px;
-    }
-
-    /* Messages area - Hidden when collapsed */
-    .chat-area .messages {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
-    }
-
-    .chat-area.chat-expanded .messages {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    /* Chat Input - Fixed at bottom of chat panel */
-    .chat-area .chat-input {
-        flex-shrink: 0;
-        padding: 10px 12px;
-        padding-bottom: calc(10px + var(--safe-area-bottom));
-        background: white;
-        border-top: 1px solid #e9ecef;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
-    }
-
-    .chat-area.chat-expanded .chat-input {
-        opacity: 1;
-        visibility: visible;
+        padding: 12px;
+        padding-bottom: 8px;
     }
 
     /* Game Switcher */
     .game-switcher {
-        padding: 10px 12px;
+        padding: 8px 12px;
         flex-shrink: 0;
     }
 
@@ -1091,19 +1006,97 @@ body {
         font-size: 0.9rem;
     }
 
-    /* Grids */
+    /* Grids - Smaller on mobile to leave room for chat */
     .grid {
-        width: min(340px, 80vw);
+        width: min(280px, 75vw);
+        margin: 0 auto;
     }
 
     .xoxo-grid {
-        width: min(280px, 75vw);
+        width: min(240px, 70vw);
     }
 
     .xoxo-cell {
-        min-height: 70px;
-        min-width: 70px;
-        font-size: clamp(1.8rem, 7vw, 2.8rem);
+        min-height: 60px;
+        min-width: 60px;
+        font-size: clamp(1.5rem, 6vw, 2.5rem);
+    }
+
+    /* ========================================
+       Chat Area - Bottom Section (35-40%)
+       NOT FIXED - In normal document flow
+       ======================================== */
+    .chat-area {
+        flex: 0 0 auto;
+        height: var(--mobile-chat-height);
+        min-height: var(--mobile-chat-min-height);
+        max-height: 45%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        border-left: none;
+        border-radius: 0;
+        z-index: 10;
+        /* NOT position:fixed - stays in flex flow */
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Chat Header */
+    .chat-area .chat-header {
+        flex-shrink: 0;
+        padding: 10px 16px;
+        font-size: 0.95rem;
+        border-radius: 0;
+    }
+
+    /* Messages Container - Takes available space */
+    .chat-area .messages {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px 12px;
+        /* Always visible */
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Chat Input - Always visible, pinned to bottom */
+    .chat-area .chat-input {
+        flex-shrink: 0;
+        padding: 10px 12px;
+        padding-bottom: calc(10px + var(--safe-area-bottom));
+        background: white;
+        border-top: 1px solid #e9ecef;
+        /* Always visible */
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .chat-input input {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+
+    .chat-input button {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+    }
+
+    /* Messages styling for mobile */
+    .message {
+        padding: 8px 12px;
+        border-radius: 14px;
+        max-width: 85%;
+        font-size: 0.9rem;
+    }
+
+    .message.theirs strong {
+        font-size: 0.75rem;
     }
 }
 
@@ -1116,27 +1109,24 @@ body {
         font-size: 14px;
     }
 
-    .main-container {
-        height: 100dvh;
+    /* Adjust chat height for smaller screens */
+    :root {
+        --mobile-chat-height: 38vh;
+        --mobile-chat-min-height: 160px;
     }
 
-    /* Adjust games wrapper for smaller screens */
+    /* Games wrapper takes slightly less space */
     .games-wrapper {
-        padding-bottom: var(--chat-collapsed-height);
-    }
-
-    /* Chat expands more on smaller screens */
-    .chat-area.chat-expanded {
-        height: var(--chat-expanded-height-small);
+        max-height: 60%;
     }
 
     .game-switcher {
-        padding: 8px;
+        padding: 6px 8px;
         gap: 6px;
     }
 
     .game-tab {
-        padding: 10px 12px;
+        padding: 8px 12px;
         font-size: 0.85rem;
         border-radius: 10px;
     }
@@ -1147,83 +1137,87 @@ body {
 
     .game-area,
     .xoxo-area {
-        padding: 12px 8px;
-        gap: 10px;
+        padding: 10px 8px;
+        gap: 8px;
     }
 
     .header h2,
     .xoxo-header h2 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
 
     .controls {
-        gap: 6px;
-    }
-
-    .controls button {
-        padding: 8px 12px;
-        font-size: 0.8rem;
-    }
-
-    .grid {
-        width: min(300px, 85vw);
-        padding: 8px;
         gap: 4px;
     }
 
-    .xoxo-grid {
+    .controls button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .grid {
         width: min(260px, 80vw);
-        padding: 10px;
-        gap: 8px;
+        padding: 6px;
+        gap: 3px;
+    }
+
+    .xoxo-grid {
+        width: min(220px, 75vw);
+        padding: 8px;
+        gap: 6px;
     }
 
     .xoxo-cell {
-        min-height: 60px;
-        min-width: 60px;
-        font-size: clamp(1.5rem, 6vw, 2.2rem);
+        min-height: 55px;
+        min-width: 55px;
+        font-size: clamp(1.4rem, 5.5vw, 2rem);
         border-radius: 10px;
     }
 
     .xoxo-status {
-        font-size: 0.95rem;
-        padding: 6px 16px;
+        font-size: 0.9rem;
+        padding: 6px 14px;
     }
 
     .xoxo-controls button {
-        padding: 12px 24px;
-        font-size: 0.9rem;
+        padding: 10px 20px;
+        font-size: 0.85rem;
     }
 
-    /* Chat styling for small screens */
+    /* Chat Area - Slightly taller on very small screens */
+    .chat-area {
+        min-height: 160px;
+    }
+
     .chat-header {
-        padding: 12px;
-        font-size: 1rem;
+        padding: 8px 12px;
+        font-size: 0.9rem;
     }
 
     .messages {
-        padding: 10px;
-        gap: 8px;
-        font-size: 0.9rem;
+        padding: 8px;
+        gap: 6px;
+        font-size: 0.85rem;
     }
 
     .message {
-        padding: 8px 12px;
-        border-radius: 14px;
+        padding: 6px 10px;
+        border-radius: 12px;
     }
 
     .chat-input {
-        padding: 10px;
+        padding: 8px;
         gap: 6px;
     }
 
     .chat-input input {
-        padding: 10px 14px;
-        font-size: 0.9rem;
+        padding: 8px 12px;
+        font-size: 0.85rem;
     }
 
     .chat-input button {
-        padding: 10px 16px;
-        font-size: 0.85rem;
+        padding: 8px 14px;
+        font-size: 0.8rem;
     }
 }
 

@@ -40,70 +40,29 @@ document.getElementById('username-input').addEventListener('keypress', function 
 });
 
 // ========================================
-// Mobile Chat Panel Toggle
+// Mobile Chat Initialization
 // ========================================
-function initMobileChatToggle() {
-    const chatArea = document.getElementById('chat-area');
-    const chatHeader = document.querySelector('.chat-header');
+function initMobileChat() {
     const chatInput = document.getElementById('msg-input');
 
-    if (!chatArea || !chatHeader) return;
-
-    // Check if mobile
-    const isMobile = () => window.innerWidth <= 768;
-
-    // Toggle chat expansion
-    chatHeader.addEventListener('click', function (e) {
-        if (!isMobile()) return;
-
-        chatArea.classList.toggle('chat-expanded');
-
-        // If expanded, scroll messages to bottom
-        if (chatArea.classList.contains('chat-expanded')) {
-            // Clear notification indicator when expanded
-            chatArea.classList.remove('has-new-message');
-
-            // Use scrollChatToBottom with delay for animation
-            setTimeout(() => {
-                scrollChatToBottom();
-            }, 350);
-        }
-    });
-
-    // Auto-expand when input is focused
+    // Scroll chat to bottom when input is focused (ensures latest messages visible)
     if (chatInput) {
         chatInput.addEventListener('focus', function () {
-            if (isMobile() && !chatArea.classList.contains('chat-expanded')) {
-                chatArea.classList.add('chat-expanded');
-                // Scroll to bottom after expansion animation
-                setTimeout(() => {
-                    scrollChatToBottom();
-                }, 350);
-            }
+            // Small delay to let virtual keyboard appear on mobile
+            setTimeout(() => {
+                scrollChatToBottom();
+            }, 150);
         });
     }
 
-    // Handle resize - reset state when going to desktop
-    let resizeTimeout;
-    window.addEventListener('resize', function () {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            if (!isMobile()) {
-                chatArea.classList.remove('chat-expanded');
-            }
-        }, 100);
-    });
-
-    // Prevent chat header click from bubbling when clicking inside chat
-    chatArea.addEventListener('click', function (e) {
-        if (e.target !== chatHeader && !chatHeader.contains(e.target)) {
-            e.stopPropagation();
-        }
-    });
+    // Initial scroll to bottom on load
+    setTimeout(() => {
+        scrollChatToBottom();
+    }, 500);
 }
 
-// Initialize mobile chat toggle when DOM is ready
-document.addEventListener('DOMContentLoaded', initMobileChatToggle);
+// Initialize mobile chat when DOM is ready
+document.addEventListener('DOMContentLoaded', initMobileChat);
 
 // ========================================
 // 2. Game Switcher Logic
@@ -168,13 +127,6 @@ socket.on('chat_message', (data) => {
 
     // Auto-scroll to bottom - ensure new messages are always visible
     scrollChatToBottom(chatBox);
-
-    // Mobile notification: show indicator when collapsed and new message arrives
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile && chatArea && !chatArea.classList.contains('chat-expanded')) {
-        // Add notification indicator
-        chatArea.classList.add('has-new-message');
-    }
 });
 
 // Scroll chat to bottom with smooth behavior
