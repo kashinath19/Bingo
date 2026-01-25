@@ -40,6 +40,70 @@ document.getElementById('username-input').addEventListener('keypress', function 
 });
 
 // ========================================
+// Mobile Chat Panel Toggle
+// ========================================
+function initMobileChatToggle() {
+    const chatArea = document.getElementById('chat-area');
+    const chatHeader = document.querySelector('.chat-header');
+    const chatInput = document.getElementById('msg-input');
+
+    if (!chatArea || !chatHeader) return;
+
+    // Check if mobile
+    const isMobile = () => window.innerWidth <= 768;
+
+    // Toggle chat expansion
+    chatHeader.addEventListener('click', function (e) {
+        if (!isMobile()) return;
+
+        chatArea.classList.toggle('chat-expanded');
+
+        // If expanded, scroll messages to bottom
+        if (chatArea.classList.contains('chat-expanded')) {
+            // Clear notification indicator when expanded
+            chatArea.classList.remove('has-new-message');
+
+            const messages = document.getElementById('chat-messages');
+            if (messages) {
+                setTimeout(() => {
+                    messages.scrollTop = messages.scrollHeight;
+                }, 350); // Wait for animation
+            }
+        }
+    });
+
+    // Auto-expand when input is focused
+    if (chatInput) {
+        chatInput.addEventListener('focus', function () {
+            if (isMobile() && !chatArea.classList.contains('chat-expanded')) {
+                chatArea.classList.add('chat-expanded');
+            }
+        });
+    }
+
+    // Handle resize - reset state when going to desktop
+    let resizeTimeout;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            if (!isMobile()) {
+                chatArea.classList.remove('chat-expanded');
+            }
+        }, 100);
+    });
+
+    // Prevent chat header click from bubbling when clicking inside chat
+    chatArea.addEventListener('click', function (e) {
+        if (e.target !== chatHeader && !chatHeader.contains(e.target)) {
+            e.stopPropagation();
+        }
+    });
+}
+
+// Initialize mobile chat toggle when DOM is ready
+document.addEventListener('DOMContentLoaded', initMobileChatToggle);
+
+// ========================================
 // 2. Game Switcher Logic
 // ========================================
 let currentGame = 'bingo';
@@ -74,6 +138,7 @@ document.getElementById('msg-input').addEventListener("keypress", function (even
 
 socket.on('chat_message', (data) => {
     const chatBox = document.getElementById('chat-messages');
+    const chatArea = document.getElementById('chat-area');
     const msgDiv = document.createElement('div');
 
     msgDiv.classList.add('message');
@@ -94,6 +159,13 @@ socket.on('chat_message', (data) => {
 
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Mobile notification: show indicator when collapsed and new message arrives
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile && chatArea && !chatArea.classList.contains('chat-expanded')) {
+        // Add notification indicator
+        chatArea.classList.add('has-new-message');
+    }
 });
 
 // Escape HTML to prevent XSS

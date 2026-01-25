@@ -875,34 +875,154 @@ body {
 
 /* ========================================
    Mobile Responsive - 768px and below
+   COMPLETE REDESIGN: Fixed Chat Panel at Bottom
    ======================================== */
+
+/* CSS Custom Properties for Mobile Chat */
+:root {
+    --chat-collapsed-height: 52px;
+    --chat-expanded-height: 45vh;
+    --chat-expanded-height-small: 50vh;
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @media (max-width: 768px) {
+
+    /* Prevent body scroll, use fixed layout */
+    body {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+    }
+
     .main-container {
         flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+        height: 100dvh;
+        position: relative;
+    }
+
+    /* Games Wrapper - Takes remaining space above chat */
+    .games-wrapper {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        /* Account for fixed chat at bottom */
+        padding-bottom: var(--chat-collapsed-height);
+    }
+
+    /* Game areas scroll independently */
+    .game-area,
+    .xoxo-area {
+        flex: 1 1 auto;
         overflow-y: auto;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .games-wrapper {
-        flex: 0 0 auto;
-        min-height: 55vh;
-        order: 1;
-    }
-
+    /* ========================================
+       Fixed Chat Panel at Bottom (WhatsApp-style)
+       ======================================== */
     .chat-area {
-        flex: 0 0 auto;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
         width: 100%;
         max-width: 100%;
         min-width: 100%;
-        max-height: 45vh;
-        min-height: 200px;
+        height: var(--chat-collapsed-height);
+        max-height: 100%;
         border-left: none;
-        border-top: 2px solid rgba(102, 126, 234, 0.3);
-        order: 2;
+        border-top: none;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Safe area for notch devices */
+        padding-bottom: var(--safe-area-bottom);
     }
 
+    /* Expanded chat state */
+    .chat-area.chat-expanded {
+        height: var(--chat-expanded-height);
+    }
+
+    /* Chat Header - Always visible, acts as toggle */
+    .chat-area .chat-header {
+        flex-shrink: 0;
+        padding: 14px 16px;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: relative;
+        border-radius: 20px 20px 0 0;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Expand/Collapse indicator */
+    .chat-area .chat-header::after {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 2px;
+    }
+
+    /* Messages area - Hidden when collapsed */
+    .chat-area .messages {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .chat-area.chat-expanded .messages {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Chat Input - Fixed at bottom of chat panel */
+    .chat-area .chat-input {
+        flex-shrink: 0;
+        padding: 10px 12px;
+        padding-bottom: calc(10px + var(--safe-area-bottom));
+        background: white;
+        border-top: 1px solid #e9ecef;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .chat-area.chat-expanded .chat-input {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Game Switcher */
     .game-switcher {
         padding: 10px 12px;
+        flex-shrink: 0;
     }
 
     .game-tab {
@@ -910,6 +1030,7 @@ body {
         font-size: 0.9rem;
     }
 
+    /* Grids */
     .grid {
         width: min(340px, 80vw);
     }
@@ -938,13 +1059,14 @@ body {
         height: 100dvh;
     }
 
+    /* Adjust games wrapper for smaller screens */
     .games-wrapper {
-        min-height: 50vh;
+        padding-bottom: var(--chat-collapsed-height);
     }
 
-    .chat-area {
-        max-height: 50vh;
-        min-height: 180px;
+    /* Chat expands more on smaller screens */
+    .chat-area.chat-expanded {
+        height: var(--chat-expanded-height-small);
     }
 
     .game-switcher {
@@ -1011,6 +1133,7 @@ body {
         font-size: 0.9rem;
     }
 
+    /* Chat styling for small screens */
     .chat-header {
         padding: 12px;
         font-size: 1rem;
@@ -1076,6 +1199,12 @@ body {
     .tab-icon {
         font-size: 1.4rem;
     }
+
+    /* Smaller chat header for very small screens */
+    .chat-area .chat-header {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
 }
 
 /* ========================================
@@ -1128,4 +1257,56 @@ input:focus,
 .game-tab {
     -webkit-user-select: none;
     user-select: none;
+}
+
+/* ========================================
+   Mobile Chat Notification Badge
+   ======================================== */
+@media (max-width: 768px) {
+
+    /* Notification indicator when chat has new messages */
+    .chat-area.has-new-message .chat-header::before {
+        content: '';
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        background: #e74c3c;
+        border-radius: 50%;
+        animation: notificationPulse 1.5s ease-in-out infinite;
+        box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+    }
+
+    @keyframes notificationPulse {
+
+        0%,
+        100% {
+            transform: translateY(-50%) scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: translateY(-50%) scale(1.3);
+            opacity: 0.7;
+        }
+    }
+
+    /* Subtle bounce animation on chat header when new message */
+    .chat-area.has-new-message .chat-header {
+        animation: headerBounce 0.5s ease-out;
+    }
+
+    @keyframes headerBounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-4px);
+        }
+    }
 }
