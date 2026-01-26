@@ -17,6 +17,94 @@ let xoxoMySymbol = null; // 'X' or 'O'
 let xoxoOpponentName = '';
 let xoxoIsMultiplayer = false;
 let xoxoIsSearching = false;
+let selectedGridSize = 3; // Default 3x3
+
+// ========================================
+// Player Stats (localStorage)
+// ========================================
+const STATS_KEY_PREFIX = 'xoxo_stats_';
+
+function getStatsKey() {
+    return username ? `${STATS_KEY_PREFIX}${username}` : null;
+}
+
+function getPlayerStats() {
+    const key = getStatsKey();
+    if (!key) return { wins: 0, losses: 0, draws: 0 };
+
+    try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+    } catch (e) {
+        console.error('Error reading stats:', e);
+    }
+    return { wins: 0, losses: 0, draws: 0 };
+}
+
+function savePlayerStats(stats) {
+    const key = getStatsKey();
+    if (!key) return;
+
+    try {
+        localStorage.setItem(key, JSON.stringify(stats));
+    } catch (e) {
+        console.error('Error saving stats:', e);
+    }
+}
+
+function updateStatsDisplay(oppStats = null, oppName = null) {
+    // Update My Stats
+    const myStats = getPlayerStats();
+    document.getElementById('my-wins').textContent = myStats.wins;
+    document.getElementById('my-losses').textContent = myStats.losses;
+    document.getElementById('my-draws').textContent = myStats.draws;
+
+    // Update Opponent Stats
+    const oppCard = document.getElementById('opp-stats-card');
+    if (oppStats && oppName) {
+        document.getElementById('opp-name').textContent = `👤 ${oppName}`;
+        document.getElementById('opp-wins').textContent = oppStats.wins;
+        document.getElementById('opp-losses').textContent = oppStats.losses;
+        document.getElementById('opp-draws').textContent = oppStats.draws;
+        oppCard.style.opacity = '1';
+    } else {
+        document.getElementById('opp-name').textContent = 'Waiting...';
+        document.getElementById('opp-wins').textContent = '-';
+        document.getElementById('opp-losses').textContent = '-';
+        document.getElementById('opp-draws').textContent = '-';
+        oppCard.style.opacity = '0.5';
+    }
+}
+
+function recordWin() {
+    const stats = getPlayerStats();
+    stats.wins++;
+    savePlayerStats(stats);
+    updateStatsDisplay();
+}
+
+function recordLoss() {
+    const stats = getPlayerStats();
+    stats.losses++;
+    savePlayerStats(stats);
+    updateStatsDisplay();
+}
+
+function recordDraw() {
+    const stats = getPlayerStats();
+    stats.draws++;
+    savePlayerStats(stats);
+    updateStatsDisplay();
+}
+
+function resetStats() {
+    if (confirm('Are you sure you want to reset your stats?')) {
+        savePlayerStats({ wins: 0, losses: 0, draws: 0 });
+        updateStatsDisplay();
+    }
+}
 
 // ========================================
 // 1. Login Logic
@@ -150,11 +238,35 @@ function escapeHtml(text) {
 // ========================================
 // 4. XOXO (Tic-Tac-Toe) Game Logic
 // ========================================
-function initXOXOGame() {
+
+// Grid Size Selector
+function setGridSize(size) {
+    if (xoxoIsMultiplayer || xoxoIsSearching) {
+        alert('Cannot change grid size during a game or while searching!');
+        return;
+    }
+
+    selectedGridSize = size;
+
+    // Update button states
+    document.getElementById('grid-3x3-btn').classList.toggle('active', size === 3);
+    document.getElementById('grid-5x5-btn').classList.toggle('active', size === 5);
+
+    // Reinitialize grid with new size
+    initXOXOGame(size);
+}
+
+function initXOXOGame(gridSize) {
+    const size = gridSize || selectedGridSize;
+    const totalCells = size * size;
     const grid = document.getElementById('xoxo-grid');
     grid.innerHTML = '';
 
-    for (let i = 0; i < 9; i++) {
+    // Update grid class for styling
+    grid.className = 'xoxo-grid'; // Reset classes
+    grid.classList.add(`grid-${size}x${size}`);
+
+    for (let i = 0; i < totalCells; i++) {
         const cell = document.createElement('div');
         cell.classList.add('xoxo-cell');
         cell.setAttribute('data-index', i);
@@ -174,12 +286,15 @@ function initXOXOGame() {
     }
 
     // Reset to initial state
-    resetXOXOLocalState();
+    resetXOXOLocalState(size);
     updateXOXOUI();
+    updateStatsDisplay();
 }
 
-function resetXOXOLocalState() {
-    xoxoBoard = Array(9).fill('');
+function resetXOXOLocalState(gridSize) {
+    const size = gridSize || selectedGridSize;
+    const totalCells = size * size;
+    xoxoBoard = Array(totalCells).fill('');
     xoxoCurrentPlayer = 'X';
     xoxoGameActive = false;
     xoxoGameOver = false;
@@ -246,7 +361,8 @@ function findXOXOMatch() {
     if (xoxoIsSearching || xoxoIsMultiplayer) return;
 
     xoxoIsSearching = true;
-    socket.emit('xoxo_find_match');
+    const myStats = getPlayerStats();
+    socket.emit('xoxo_find_match', { gridSize: selectedGridSize, stats: myStats });
     updateXOXOUI();
 }
 
@@ -443,18 +559,31 @@ socket.on('xoxo_game_start', (data) => {
     xoxoGameActive = true;
     xoxoGameOver = false;
 
+    // Update grid size from server (in case it differs)
+    const serverGridSize = data.gridSize || 3;
+    if (serverGridSize !== selectedGridSize) {
+        selectedGridSize = serverGridSize;
+        document.getElementById('grid-3x3-btn').classList.toggle('active', serverGridSize === 3);
+        document.getElementById('grid-5x5-btn').classList.toggle('active', serverGridSize === 5);
+    }
+
     // Determine my symbol and opponent
+    let oppStats = null;
     if (data.players.X.socketId === socket.id) {
         xoxoMySymbol = 'X';
         xoxoOpponentName = data.players.O.username;
+        oppStats = data.players.O.stats;
     } else {
         xoxoMySymbol = 'O';
         xoxoOpponentName = data.players.X.username;
+        oppStats = data.players.X.stats;
     }
 
-    clearXOXOBoard();
+    // Reinitialize grid with correct size
+    initXOXOGame(serverGridSize);
     renderXOXOBoard();
     updateXOXOUI();
+    updateStatsDisplay(oppStats, xoxoOpponentName);
 
     // Switch to XOXO tab if not already there
     if (currentGame !== 'xoxo') {
@@ -474,6 +603,18 @@ socket.on('xoxo_game_end', (data) => {
     xoxoBoard = data.board;
     renderXOXOBoard();
 
+    // Record stats based on result
+    if (data.winner === 'draw') {
+        recordDraw();
+    } else {
+        const amIWinner = data.winnerInfo && (data.winnerInfo.socketId === socket.id);
+        if (amIWinner) {
+            recordWin();
+        } else {
+            recordLoss();
+        }
+    }
+
     lockXOXOGame(data.winner, data.winnerInfo, data.loserInfo, data.winningPattern);
 });
 
@@ -483,7 +624,9 @@ socket.on('xoxo_game_restart', (data) => {
     xoxoGameActive = true;
     xoxoGameOver = false;
 
-    clearXOXOBoard();
+    // Reinitialize grid with correct size
+    const serverGridSize = data.gridSize || selectedGridSize;
+    initXOXOGame(serverGridSize);
     renderXOXOBoard();
     updateXOXOUI();
 });
@@ -500,13 +643,16 @@ socket.on('xoxo_opponent_left', (data) => {
     resultDiv.textContent = `${data.username} left. You win by default! 🏆`;
     resultDiv.className = 'xoxo-result win';
 
+    // Record win by default
+    recordWin();
+
     // Lock the game
     const gameGrid = document.getElementById('xoxo-grid');
     gameGrid.classList.add('game-locked');
 
     setTimeout(() => {
         resetXOXOLocalState();
-        clearXOXOBoard();
+        initXOXOGame(selectedGridSize);
         updateXOXOUI();
     }, 3000);
 });

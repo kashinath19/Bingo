@@ -17,17 +17,23 @@ let players = {};
 // XOXO Multiplayer Game State
 // ========================================
 let xoxoRooms = {};
-let xoxoQueue = []; // Players waiting for a match
+// Separate queues for different grid sizes
+let xoxoQueues = {
+    3: [], // 3x3 queue
+    5: []  // 5x5 queue
+};
 
-function createXOXORoom(player1, player2) {
+function createXOXORoom(player1, player2, gridSize = 3) {
     const roomId = `xoxo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const totalCells = gridSize * gridSize;
     xoxoRooms[roomId] = {
         roomId: roomId,
+        gridSize: gridSize,
         players: {
             X: player1,
             O: player2
         },
-        board: Array(9).fill(''),
+        board: Array(totalCells).fill(''),
         currentPlayer: 'X',
         gameActive: true,
         winner: null,
@@ -36,17 +42,50 @@ function createXOXORoom(player1, player2) {
     return roomId;
 }
 
-function checkXOXOWinner(board) {
-    const winPatterns = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
-        [0, 4, 8], [2, 4, 6]             // Diagonals
-    ];
+function checkXOXOWinner(board, gridSize = 3) {
+    const size = gridSize;
+    const winLength = size; // Need N in a row for NxN grid
 
+    // Generate win patterns dynamically
+    const winPatterns = [];
+
+    // Rows
+    for (let r = 0; r < size; r++) {
+        const row = [];
+        for (let c = 0; c < size; c++) {
+            row.push(r * size + c);
+        }
+        winPatterns.push(row);
+    }
+
+    // Columns
+    for (let c = 0; c < size; c++) {
+        const col = [];
+        for (let r = 0; r < size; r++) {
+            col.push(r * size + c);
+        }
+        winPatterns.push(col);
+    }
+
+    // Diagonal (top-left to bottom-right)
+    const diag1 = [];
+    for (let i = 0; i < size; i++) {
+        diag1.push(i * size + i);
+    }
+    winPatterns.push(diag1);
+
+    // Diagonal (top-right to bottom-left)
+    const diag2 = [];
+    for (let i = 0; i < size; i++) {
+        diag2.push(i * size + (size - 1 - i));
+    }
+    winPatterns.push(diag2);
+
+    // Check all patterns
     for (const pattern of winPatterns) {
-        const [a, b, c] = pattern;
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return { winner: board[a], pattern: pattern };
+        const first = board[pattern[0]];
+        if (first && pattern.every(idx => board[idx] === first)) {
+            return { winner: first, pattern: pattern };
         }
     }
 
@@ -91,13 +130,22 @@ io.on('connection', (socket) => {
     // ========================================
 
     // Player wants to find a match
-    socket.on('xoxo_find_match', () => {
+    socket.on('xoxo_find_match', (data) => {
         const username = players[socket.id];
         if (!username) return;
 
-        // Check if player is already in queue or game
-        const existingQueueIndex = xoxoQueue.findIndex(p => p.socketId === socket.id);
-        if (existingQueueIndex !== -1) return;
+        // Get grid size from client (default to 3)
+        const gridSize = (data && (data.gridSize === 5 || data.gridSize === 3)) ? data.gridSize : 3;
+        // Get player stats from client
+        const playerStats = (data && data.stats) ? data.stats : { wins: 0, draws: 0, losses: 0 };
+
+        const queue = xoxoQueues[gridSize];
+
+        // Check if player is already in any queue
+        for (const size in xoxoQueues) {
+            const existingIndex = xoxoQueues[size].findIndex(p => p.socketId === socket.id);
+            if (existingIndex !== -1) return;
+        }
 
         // Check if player is already in a game
         for (const roomId in xoxoRooms) {
@@ -110,13 +158,15 @@ io.on('connection', (socket) => {
 
         const playerData = {
             socketId: socket.id,
-            username: username
+            username: username,
+            gridSize: gridSize,
+            stats: playerStats
         };
 
-        if (xoxoQueue.length > 0) {
+        if (queue.length > 0) {
             // Match found - create game room
-            const opponent = xoxoQueue.shift();
-            const roomId = createXOXORoom(opponent, playerData);
+            const opponent = queue.shift();
+            const roomId = createXOXORoom(opponent, playerData, gridSize);
 
             // Join both players to the room
             const opponentSocket = io.sockets.sockets.get(opponent.socketId);
@@ -125,12 +175,13 @@ io.on('connection', (socket) => {
             }
             socket.join(roomId);
 
-            // Notify both players
+            // Notify both players - include stats
             io.to(roomId).emit('xoxo_game_start', {
                 roomId: roomId,
+                gridSize: gridSize,
                 players: {
-                    X: { username: opponent.username, socketId: opponent.socketId },
-                    O: { username: playerData.username, socketId: playerData.socketId }
+                    X: { username: opponent.username, socketId: opponent.socketId, stats: opponent.stats },
+                    O: { username: playerData.username, socketId: playerData.socketId, stats: playerData.stats }
                 },
                 board: xoxoRooms[roomId].board,
                 currentPlayer: 'X'
@@ -139,24 +190,28 @@ io.on('connection', (socket) => {
             // Announce in chat
             io.emit('chat_message', {
                 user: 'System',
-                text: `🎮 XOXO Match: ${opponent.username} (X) vs ${playerData.username} (O) started!`,
+                text: `🎮 XOXO ${gridSize}x${gridSize} Match: ${opponent.username} (X) vs ${playerData.username} (O) started!`,
                 type: 'system'
             });
         } else {
             // Add to queue
-            xoxoQueue.push(playerData);
+            queue.push(playerData);
             socket.emit('xoxo_waiting', {
-                message: 'Waiting for opponent...'
+                message: `Waiting for ${gridSize}x${gridSize} opponent...`
             });
         }
     });
 
     // Leave matchmaking queue
     socket.on('xoxo_cancel_search', () => {
-        const index = xoxoQueue.findIndex(p => p.socketId === socket.id);
-        if (index !== -1) {
-            xoxoQueue.splice(index, 1);
-            socket.emit('xoxo_search_cancelled');
+        // Search all queues
+        for (const size in xoxoQueues) {
+            const index = xoxoQueues[size].findIndex(p => p.socketId === socket.id);
+            if (index !== -1) {
+                xoxoQueues[size].splice(index, 1);
+                socket.emit('xoxo_search_cancelled');
+                return;
+            }
         }
     });
 
@@ -186,7 +241,7 @@ io.on('connection', (socket) => {
         room.board[cellIndex] = playerSymbol;
 
         // Check for winner
-        const result = checkXOXOWinner(room.board);
+        const result = checkXOXOWinner(room.board, room.gridSize);
 
         if (result) {
             room.gameActive = false;
@@ -259,7 +314,8 @@ io.on('connection', (socket) => {
         if (!room) return;
 
         // Reset game state
-        room.board = Array(9).fill('');
+        const totalCells = room.gridSize * room.gridSize;
+        room.board = Array(totalCells).fill('');
         room.currentPlayer = 'X';
         room.gameActive = true;
         room.winner = null;
@@ -268,6 +324,7 @@ io.on('connection', (socket) => {
         // Broadcast new game start
         io.to(roomId).emit('xoxo_game_restart', {
             roomId: roomId,
+            gridSize: room.gridSize,
             board: room.board,
             currentPlayer: 'X',
             players: room.players
@@ -297,10 +354,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const username = players[socket.id];
 
-        // Remove from matchmaking queue
-        const queueIndex = xoxoQueue.findIndex(p => p.socketId === socket.id);
-        if (queueIndex !== -1) {
-            xoxoQueue.splice(queueIndex, 1);
+        // Remove from all matchmaking queues
+        for (const size in xoxoQueues) {
+            const queueIndex = xoxoQueues[size].findIndex(p => p.socketId === socket.id);
+            if (queueIndex !== -1) {
+                xoxoQueues[size].splice(queueIndex, 1);
+            }
         }
 
         // Handle active games
