@@ -742,7 +742,6 @@ function renderPlayableBoard(numbers) {
     completedLines = [];
     isGameActive = true;
 
-    document.getElementById('start-manual-btn').style.display = 'none';
     document.getElementById('bingo-btn').style.display = 'none';
     document.getElementById('game-status').textContent = "Game On! Mark numbers. Complete lines light up BINGO letters!";
 
