@@ -1112,18 +1112,21 @@ body {
 
     /* Bingo Controls - Mobile Optimization */
     .controls {
-        gap: 10px;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
         margin-top: 10px;
-        width: 100%;
-        max-width: 320px;
+        width: auto;
+        max-width: 100%;
         padding: 0 10px;
+        justify-content: center;
     }
 
     .controls button {
-        padding: 10px 16px;
-        font-size: 0.85rem;
-        min-width: 120px;
-        flex: 1 1 auto;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        min-width: 0;
+        flex: 0 1 auto;
         white-space: nowrap;
     }
 
@@ -1266,15 +1269,15 @@ body {
     }
 
     .controls {
-        gap: 8px;
-        max-width: 280px;
-        padding: 0 8px;
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding: 0 6px;
     }
 
     .controls button {
-        padding: 8px 14px;
-        font-size: 0.8rem;
-        min-width: 100px;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        min-width: 0;
     }
 
     .grid {
