@@ -615,7 +615,6 @@ function createEmptyBoard() {
     completedLines = [];
     isGameActive = false;
     document.getElementById('bingo-btn').style.display = 'none';
-    document.getElementById('start-manual-btn').style.display = 'inline-block';
     document.getElementById('game-status').textContent = "Enter numbers 1-25 uniquely or use Random Board.";
 
     // Create 25 input cells for manual entry with improved UX
