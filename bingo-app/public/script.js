@@ -19,68 +19,6 @@ let xoxoIsMultiplayer = false;
 let xoxoIsSearching = false;
 let selectedGridSize = 3; // Default 3x3
 
-// ========================================
-// Game Statistics Tracking
-// ========================================
-let gameStats = {
-    bingo: { wins: 0, draws: 0, losses: 0 },
-    xoxo: { wins: 0, draws: 0, losses: 0 }
-};
-
-// Load stats from localStorage on init
-function loadGameStats() {
-    try {
-        const saved = localStorage.getItem('gameStats');
-        if (saved) {
-            gameStats = JSON.parse(saved);
-        }
-    } catch (e) {
-        console.log('Could not load stats from localStorage');
-    }
-    updateStatsDisplay('bingo');
-    updateStatsDisplay('xoxo');
-}
-
-// Save stats to localStorage
-function saveGameStats() {
-    try {
-        localStorage.setItem('gameStats', JSON.stringify(gameStats));
-    } catch (e) {
-        console.log('Could not save stats to localStorage');
-    }
-}
-
-// Update stats display for a game
-function updateStatsDisplay(game) {
-    const winsEl = document.getElementById(`${game}-wins`);
-    const drawsEl = document.getElementById(`${game}-draws`);
-    const lossesEl = document.getElementById(`${game}-losses`);
-
-    if (winsEl) winsEl.textContent = gameStats[game].wins;
-    if (drawsEl) drawsEl.textContent = gameStats[game].draws;
-    if (lossesEl) lossesEl.textContent = gameStats[game].losses;
-}
-
-// Increment a stat with animation
-function incrementStat(game, statType) {
-    gameStats[game][statType]++;
-    saveGameStats();
-
-    const statEl = document.getElementById(`${game}-${statType}`);
-    if (statEl) {
-        statEl.textContent = gameStats[game][statType];
-        statEl.classList.remove('updated');
-        // Trigger reflow
-        void statEl.offsetWidth;
-        statEl.classList.add('updated');
-
-        // Remove animation class after completion
-        setTimeout(() => {
-            statEl.classList.remove('updated');
-        }, 400);
-    }
-}
-
 
 // ========================================
 // 1. Login Logic
@@ -126,10 +64,7 @@ function initMobileChat() {
 }
 
 // Initialize mobile chat when DOM is ready
-document.addEventListener('DOMContentLoaded', function () {
-    initMobileChat();
-    loadGameStats();
-});
+document.addEventListener('DOMContentLoaded', initMobileChat);
 
 // ========================================
 // 2. Game Switcher Logic
@@ -479,8 +414,6 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
         resultDiv.textContent = "🤝 It's a Draw!";
         resultDiv.className = 'xoxo-result draw';
         overlay.innerHTML = '<div class="overlay-content draw">🤝 DRAW</div>';
-        // Track draw stat
-        incrementStat('xoxo', 'draws');
     } else {
         // Highlight winning row
         highlightWinningCells(pattern);
@@ -494,8 +427,6 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
             resultDiv.textContent = `🎉 You Won! Player ${winnerSymbol}`;
             resultDiv.className = 'xoxo-result win winner-self';
             overlay.innerHTML = `<div class="overlay-content winner">🎉 YOU WON!</div>`;
-            // Track win stat
-            incrementStat('xoxo', 'wins');
         } else {
             // Loser/Opponent screen
             const winnerName = winnerInfo ? winnerInfo.username : `Player ${winnerSymbol}`;
@@ -504,8 +435,6 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
             resultDiv.textContent = `❌ You Lost. ${winnerName} Won`;
             resultDiv.className = 'xoxo-result win loser';
             overlay.innerHTML = `<div class="overlay-content loser">❌ YOU LOST<br><small>${winnerName} Won</small></div>`;
-            // Track loss stat
-            incrementStat('xoxo', 'losses');
         }
     }
 
