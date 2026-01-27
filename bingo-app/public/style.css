@@ -1124,7 +1124,8 @@ body {
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         padding: 12px;
-        padding-bottom: 8px;
+        padding-bottom: 20px;
+        /* Extra bottom padding to ensure content doesn't get cut off */
     }
 
     /* Game Switcher */
@@ -1140,12 +1141,13 @@ body {
 
     /* Grids - Smaller on mobile to leave room for chat */
     .grid {
-        width: min(280px, 75vw);
+        width: min(320px, 85vw);
+        max-width: 400px;
         margin: 0 auto;
     }
 
     .xoxo-grid {
-        width: min(240px, 70vw);
+        width: min(260px, 75vw);
     }
 
     .xoxo-cell {
@@ -1270,6 +1272,7 @@ body {
     .game-area,
     .xoxo-area {
         padding: 10px 8px;
+        padding-bottom: 16px;
         gap: 8px;
     }
 
@@ -1288,9 +1291,10 @@ body {
     }
 
     .grid {
-        width: min(260px, 80vw);
-        padding: 6px;
-        gap: 3px;
+        width: min(300px, 90vw);
+        max-width: 400px;
+        padding: 8px;
+        gap: 4px;
     }
 
     .xoxo-grid {
@@ -1516,8 +1520,10 @@ input:focus,
     .game-area,
     .xoxo-area {
         padding: 10px;
+        padding-bottom: 20px;
         justify-content: center;
         /* Center vertically on mobile */
+        /* Extra bottom padding ensures no overlap with chat */
     }
 
     /* Chat area becomes a bottom drawer or full width section */
