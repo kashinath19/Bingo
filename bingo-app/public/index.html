@@ -49,6 +49,25 @@
                     <p class="instruction" id="game-status">Enter numbers 1–25 uniquely or click Random.</p>
                 </div>
 
+                <!-- Stats Bar for Bingo -->
+                <div class="stats-bar" id="bingo-stats">
+                    <div class="stats-item wins">
+                        <span class="stats-icon">🏆</span>
+                        <span class="stats-label">Wins</span>
+                        <span class="stats-value" id="bingo-wins">0</span>
+                    </div>
+                    <div class="stats-item draws">
+                        <span class="stats-icon">🤝</span>
+                        <span class="stats-label">Draws</span>
+                        <span class="stats-value" id="bingo-draws">0</span>
+                    </div>
+                    <div class="stats-item losses">
+                        <span class="stats-icon">❌</span>
+                        <span class="stats-label">Losses</span>
+                        <span class="stats-value" id="bingo-losses">0</span>
+                    </div>
+                </div>
+
                 <div id="bingo-grid" class="grid" aria-label="Bingo grid"></div>
 
                 <button id="bingo-btn" onclick="declareWin()" style="display:none;">I HAVE BINGO!</button>
@@ -64,51 +83,23 @@
                         <button class="grid-size-btn" id="grid-5x5-btn" onclick="setGridSize(5)">5×5</button>
                     </div>
                     <p class="xoxo-status" id="xoxo-status">Find an opponent to play!</p>
-                </div>
 
-                <!-- Player Stats Display -->
-                <!-- Player Stats Display -->
-                <div class="player-stats-container" id="player-stats">
-                    <!-- My Stats -->
-                    <div class="stats-card my-stats">
-                        <div class="stats-header">
-                            <span class="player-name">👤 You</span>
-                            <button class="reset-btn" onclick="resetStats()" title="Reset Stats">🔄</button>
+                    <!-- Stats Bar for XOXO -->
+                    <div class="stats-bar" id="xoxo-stats">
+                        <div class="stats-item wins">
+                            <span class="stats-icon">🏆</span>
+                            <span class="stats-label">Wins</span>
+                            <span class="stats-value" id="xoxo-wins">0</span>
                         </div>
-                        <div class="stats-grid">
-                            <div class="stat-box win">
-                                <span class="stat-val" id="my-wins">0</span>
-                                <span class="stat-lbl">Wins</span>
-                            </div>
-                            <div class="stat-box draw">
-                                <span class="stat-val" id="my-draws">0</span>
-                                <span class="stat-lbl">Draws</span>
-                            </div>
-                            <div class="stat-box loss">
-                                <span class="stat-val" id="my-losses">0</span>
-                                <span class="stat-lbl">Losses</span>
-                            </div>
+                        <div class="stats-item draws">
+                            <span class="stats-icon">🤝</span>
+                            <span class="stats-label">Draws</span>
+                            <span class="stats-value" id="xoxo-draws">0</span>
                         </div>
-                    </div>
-
-                    <!-- Opponent Stats -->
-                    <div class="stats-card opp-stats" id="opp-stats-card" style="opacity: 0.5;">
-                        <div class="stats-header">
-                            <span class="player-name" id="opp-name">Waiting...</span>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-box win">
-                                <span class="stat-val" id="opp-wins">-</span>
-                                <span class="stat-lbl">Wins</span>
-                            </div>
-                            <div class="stat-box draw">
-                                <span class="stat-val" id="opp-draws">-</span>
-                                <span class="stat-lbl">Draws</span>
-                            </div>
-                            <div class="stat-box loss">
-                                <span class="stat-val" id="opp-losses">-</span>
-                                <span class="stat-lbl">Losses</span>
-                            </div>
+                        <div class="stats-item losses">
+                            <span class="stats-icon">❌</span>
+                            <span class="stats-label">Losses</span>
+                            <span class="stats-value" id="xoxo-losses">0</span>
                         </div>
                     </div>
                 </div>

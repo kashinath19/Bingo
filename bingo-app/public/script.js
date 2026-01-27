@@ -20,91 +20,67 @@ let xoxoIsSearching = false;
 let selectedGridSize = 3; // Default 3x3
 
 // ========================================
-// Player Stats (localStorage)
+// Game Statistics Tracking
 // ========================================
-const STATS_KEY_PREFIX = 'xoxo_stats_';
+let gameStats = {
+    bingo: { wins: 0, draws: 0, losses: 0 },
+    xoxo: { wins: 0, draws: 0, losses: 0 }
+};
 
-function getStatsKey() {
-    return username ? `${STATS_KEY_PREFIX}${username}` : null;
-}
-
-function getPlayerStats() {
-    const key = getStatsKey();
-    if (!key) return { wins: 0, losses: 0, draws: 0 };
-
+// Load stats from localStorage on init
+function loadGameStats() {
     try {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            return JSON.parse(stored);
+        const saved = localStorage.getItem('gameStats');
+        if (saved) {
+            gameStats = JSON.parse(saved);
         }
     } catch (e) {
-        console.error('Error reading stats:', e);
+        console.log('Could not load stats from localStorage');
     }
-    return { wins: 0, losses: 0, draws: 0 };
+    updateStatsDisplay('bingo');
+    updateStatsDisplay('xoxo');
 }
 
-function savePlayerStats(stats) {
-    const key = getStatsKey();
-    if (!key) return;
-
+// Save stats to localStorage
+function saveGameStats() {
     try {
-        localStorage.setItem(key, JSON.stringify(stats));
+        localStorage.setItem('gameStats', JSON.stringify(gameStats));
     } catch (e) {
-        console.error('Error saving stats:', e);
+        console.log('Could not save stats to localStorage');
     }
 }
 
-function updateStatsDisplay(oppStats = null, oppName = null) {
-    // Update My Stats
-    const myStats = getPlayerStats();
-    document.getElementById('my-wins').textContent = myStats.wins;
-    document.getElementById('my-losses').textContent = myStats.losses;
-    document.getElementById('my-draws').textContent = myStats.draws;
+// Update stats display for a game
+function updateStatsDisplay(game) {
+    const winsEl = document.getElementById(`${game}-wins`);
+    const drawsEl = document.getElementById(`${game}-draws`);
+    const lossesEl = document.getElementById(`${game}-losses`);
 
-    // Update Opponent Stats
-    const oppCard = document.getElementById('opp-stats-card');
-    if (oppStats && oppName) {
-        document.getElementById('opp-name').textContent = `👤 ${oppName}`;
-        document.getElementById('opp-wins').textContent = oppStats.wins;
-        document.getElementById('opp-losses').textContent = oppStats.losses;
-        document.getElementById('opp-draws').textContent = oppStats.draws;
-        oppCard.style.opacity = '1';
-    } else {
-        document.getElementById('opp-name').textContent = 'Waiting...';
-        document.getElementById('opp-wins').textContent = '-';
-        document.getElementById('opp-losses').textContent = '-';
-        document.getElementById('opp-draws').textContent = '-';
-        oppCard.style.opacity = '0.5';
+    if (winsEl) winsEl.textContent = gameStats[game].wins;
+    if (drawsEl) drawsEl.textContent = gameStats[game].draws;
+    if (lossesEl) lossesEl.textContent = gameStats[game].losses;
+}
+
+// Increment a stat with animation
+function incrementStat(game, statType) {
+    gameStats[game][statType]++;
+    saveGameStats();
+
+    const statEl = document.getElementById(`${game}-${statType}`);
+    if (statEl) {
+        statEl.textContent = gameStats[game][statType];
+        statEl.classList.remove('updated');
+        // Trigger reflow
+        void statEl.offsetWidth;
+        statEl.classList.add('updated');
+
+        // Remove animation class after completion
+        setTimeout(() => {
+            statEl.classList.remove('updated');
+        }, 400);
     }
 }
 
-function recordWin() {
-    const stats = getPlayerStats();
-    stats.wins++;
-    savePlayerStats(stats);
-    updateStatsDisplay();
-}
-
-function recordLoss() {
-    const stats = getPlayerStats();
-    stats.losses++;
-    savePlayerStats(stats);
-    updateStatsDisplay();
-}
-
-function recordDraw() {
-    const stats = getPlayerStats();
-    stats.draws++;
-    savePlayerStats(stats);
-    updateStatsDisplay();
-}
-
-function resetStats() {
-    if (confirm('Are you sure you want to reset your stats?')) {
-        savePlayerStats({ wins: 0, losses: 0, draws: 0 });
-        updateStatsDisplay();
-    }
-}
 
 // ========================================
 // 1. Login Logic
@@ -150,7 +126,10 @@ function initMobileChat() {
 }
 
 // Initialize mobile chat when DOM is ready
-document.addEventListener('DOMContentLoaded', initMobileChat);
+document.addEventListener('DOMContentLoaded', function () {
+    initMobileChat();
+    loadGameStats();
+});
 
 // ========================================
 // 2. Game Switcher Logic
@@ -288,7 +267,6 @@ function initXOXOGame(gridSize) {
     // Reset to initial state
     resetXOXOLocalState(size);
     updateXOXOUI();
-    updateStatsDisplay();
 }
 
 function resetXOXOLocalState(gridSize) {
@@ -361,8 +339,7 @@ function findXOXOMatch() {
     if (xoxoIsSearching || xoxoIsMultiplayer) return;
 
     xoxoIsSearching = true;
-    const myStats = getPlayerStats();
-    socket.emit('xoxo_find_match', { gridSize: selectedGridSize, stats: myStats });
+    socket.emit('xoxo_find_match', { gridSize: selectedGridSize });
     updateXOXOUI();
 }
 
@@ -502,6 +479,8 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
         resultDiv.textContent = "🤝 It's a Draw!";
         resultDiv.className = 'xoxo-result draw';
         overlay.innerHTML = '<div class="overlay-content draw">🤝 DRAW</div>';
+        // Track draw stat
+        incrementStat('xoxo', 'draws');
     } else {
         // Highlight winning row
         highlightWinningCells(pattern);
@@ -515,6 +494,8 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
             resultDiv.textContent = `🎉 You Won! Player ${winnerSymbol}`;
             resultDiv.className = 'xoxo-result win winner-self';
             overlay.innerHTML = `<div class="overlay-content winner">🎉 YOU WON!</div>`;
+            // Track win stat
+            incrementStat('xoxo', 'wins');
         } else {
             // Loser/Opponent screen
             const winnerName = winnerInfo ? winnerInfo.username : `Player ${winnerSymbol}`;
@@ -523,6 +504,8 @@ function lockXOXOGame(winnerSymbol, winnerInfo, loserInfo, pattern) {
             resultDiv.textContent = `❌ You Lost. ${winnerName} Won`;
             resultDiv.className = 'xoxo-result win loser';
             overlay.innerHTML = `<div class="overlay-content loser">❌ YOU LOST<br><small>${winnerName} Won</small></div>`;
+            // Track loss stat
+            incrementStat('xoxo', 'losses');
         }
     }
 
@@ -568,22 +551,18 @@ socket.on('xoxo_game_start', (data) => {
     }
 
     // Determine my symbol and opponent
-    let oppStats = null;
     if (data.players.X.socketId === socket.id) {
         xoxoMySymbol = 'X';
         xoxoOpponentName = data.players.O.username;
-        oppStats = data.players.O.stats;
     } else {
         xoxoMySymbol = 'O';
         xoxoOpponentName = data.players.X.username;
-        oppStats = data.players.X.stats;
     }
 
     // Reinitialize grid with correct size
     initXOXOGame(serverGridSize);
     renderXOXOBoard();
     updateXOXOUI();
-    updateStatsDisplay(oppStats, xoxoOpponentName);
 
     // Switch to XOXO tab if not already there
     if (currentGame !== 'xoxo') {
@@ -602,18 +581,6 @@ socket.on('xoxo_state_update', (data) => {
 socket.on('xoxo_game_end', (data) => {
     xoxoBoard = data.board;
     renderXOXOBoard();
-
-    // Record stats based on result
-    if (data.winner === 'draw') {
-        recordDraw();
-    } else {
-        const amIWinner = data.winnerInfo && (data.winnerInfo.socketId === socket.id);
-        if (amIWinner) {
-            recordWin();
-        } else {
-            recordLoss();
-        }
-    }
 
     lockXOXOGame(data.winner, data.winnerInfo, data.loserInfo, data.winningPattern);
 });
@@ -642,9 +609,6 @@ socket.on('xoxo_opponent_left', (data) => {
     statusDiv.style.color = '#e74c3c';
     resultDiv.textContent = `${data.username} left. You win by default! 🏆`;
     resultDiv.className = 'xoxo-result win';
-
-    // Record win by default
-    recordWin();
 
     // Lock the game
     const gameGrid = document.getElementById('xoxo-grid');
@@ -971,6 +935,8 @@ function autoDeclareWin() {
     document.getElementById('game-status').textContent = `🎉 ${username} got BINGO!`;
     isGameActive = false;
     document.getElementById('bingo-btn').style.display = 'none';
+    // Track Bingo win
+    incrementStat('bingo', 'wins');
 }
 
 function declareWin() {
@@ -983,4 +949,6 @@ function declareWin() {
     document.getElementById('game-status').textContent = `🎉 ${username} declared Bingo!`;
     isGameActive = false;
     document.getElementById('bingo-btn').style.display = 'none';
+    // Track Bingo win
+    incrementStat('bingo', 'wins');
 }
