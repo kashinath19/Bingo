@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aw, Snap!</title>
+    <style>
+        body {
+            background-color: #f2f2f2;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 90%;
+            text-align: left;
+        }
+
+        .icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 0 16px 0;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #5f6368;
+            margin: 0 0 24px 0;
+        }
+
+        .error-code {
+            font-size: 12px;
+            color: #5f6368;
+            margin-bottom: 24px;
+        }
+
+        .action-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 32px;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.302), 0 1px 3px 1px rgba(60, 64, 67, 0.149);
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #185abc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Realistic Monochrome Broken Document SVG (Outline Style) -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M9 15l1-1 1 1"></path>
+            <path d="M13 15l1-1 1 1"></path>
+            <path d="M9 19c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5"></path>
+        </svg>
+        <h1>Oops</h1>
+        <p>The server limit has been reached. Please upgrade to a higher plan to continue using the service</p>
+        <div class="error-code">Error code: SERVER_LIMIT_REACHED</div>
+        <div class="action-container">
+            <button onclick="window.location.reload()">Reload</button>
+        </div>
+    </div>
+</body>
+
+</html>

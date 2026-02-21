@@ -19,6 +19,37 @@ let xoxoIsMultiplayer = false;
 let xoxoIsSearching = false;
 let selectedGridSize = 3; // Default 3x3
 
+// ========================================
+// 0. Game Limit Logic (Server-Side Only)
+// ========================================
+// Removed local storage logic. Relying on server events.
+
+// Check limit on load (Server events will handle this)
+// Check limit on load (Persist blocking)
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user was previously blocked
+    if (localStorage.getItem('is_blocked') === 'true') {
+        document.getElementById('upgrade-overlay').style.display = 'flex';
+        document.getElementById('login-screen').style.display = 'none'; // Hide login
+        document.getElementById('game-container').style.display = 'none'; // Hide game
+    }
+    initMobileChat();
+});
+
+// Listen for server limit reached event
+socket.on('game_limit_reached', (data) => {
+    // HARD REDIRECT to hardened server limit page
+    window.location.href = '/server-limit';
+});
+
+// Listen for join success (Proceed to Game)
+socket.on('join_success', (data) => {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'flex';
+    createEmptyBoard();
+    initXOXOGame();
+});
+
 
 // ========================================
 // 1. Login Logic
@@ -28,12 +59,11 @@ function joinGame() {
     if (input.value.trim() === "") return alert("Please enter a name!");
 
     username = input.value.trim();
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'flex';
+    // Validate username locally (basic check)
+    if (!username) return;
 
+    // Emit join request - Server will check limits
     socket.emit('join', username);
-    createEmptyBoard();
-    initXOXOGame();
 }
 
 // Allow Enter key to join
@@ -64,7 +94,8 @@ function initMobileChat() {
 }
 
 // Initialize mobile chat when DOM is ready
-document.addEventListener('DOMContentLoaded', initMobileChat);
+// Initialize mobile chat when DOM is ready
+// document.addEventListener('DOMContentLoaded', initMobileChat); // Moved to top logic
 
 // ========================================
 // 2. Game Switcher Logic
@@ -271,6 +302,7 @@ function updateXOXOUI() {
 }
 
 function findXOXOMatch() {
+    // Server checks limit
     if (xoxoIsSearching || xoxoIsMultiplayer) return;
 
     xoxoIsSearching = true;
@@ -287,6 +319,7 @@ function cancelXOXOSearch() {
 }
 
 function startNewXOXOGame() {
+    // Server checks limit
     if (xoxoIsMultiplayer && xoxoRoomId) {
         // Request rematch from server
         socket.emit('xoxo_new_game', { roomId: xoxoRoomId });
@@ -463,6 +496,13 @@ socket.on('xoxo_already_in_game', (data) => {
 });
 
 socket.on('xoxo_game_start', (data) => {
+    const serverGridSize = data.gridSize || 3;
+
+    // Initialize grid first (resets local state)
+    // We pass serverGridSize to ensure grid is built correctly
+    initXOXOGame(serverGridSize);
+
+    // Now set the specific multiplayer state
     xoxoIsSearching = false;
     xoxoIsMultiplayer = true;
     xoxoRoomId = data.roomId;
@@ -471,13 +511,10 @@ socket.on('xoxo_game_start', (data) => {
     xoxoGameActive = true;
     xoxoGameOver = false;
 
-    // Update grid size from server (in case it differs)
-    const serverGridSize = data.gridSize || 3;
-    if (serverGridSize !== selectedGridSize) {
-        selectedGridSize = serverGridSize;
-        document.getElementById('grid-3x3-btn').classList.toggle('active', serverGridSize === 3);
-        document.getElementById('grid-5x5-btn').classList.toggle('active', serverGridSize === 5);
-    }
+    // Update grid size UI if needed
+    selectedGridSize = serverGridSize;
+    document.getElementById('grid-3x3-btn').classList.toggle('active', serverGridSize === 3);
+    document.getElementById('grid-5x5-btn').classList.toggle('active', serverGridSize === 5);
 
     // Determine my symbol and opponent
     if (data.players.X.socketId === socket.id) {
@@ -488,8 +525,6 @@ socket.on('xoxo_game_start', (data) => {
         xoxoOpponentName = data.players.X.username;
     }
 
-    // Reinitialize grid with correct size
-    initXOXOGame(serverGridSize);
     renderXOXOBoard();
     updateXOXOUI();
 
@@ -512,6 +547,9 @@ socket.on('xoxo_game_end', (data) => {
     renderXOXOBoard();
 
     lockXOXOGame(data.winner, data.winnerInfo, data.loserInfo, data.winningPattern);
+
+    // Client count - Removed
+    // Server calculates count internally
 });
 
 socket.on('xoxo_game_restart', (data) => {
@@ -587,6 +625,14 @@ socket.on('xoxo_result_payload', (data) => {
     // This can be used for external integrations
     console.log('XOXO Result Payload:', data);
     // Example: send to analytics, save to database, etc.
+});
+
+socket.on('game_limit_reached', (data) => {
+    const statusDiv = document.getElementById('game-status');
+    statusDiv.textContent = `⚠️ ${data.message}`;
+    statusDiv.style.color = '#e74c3c';
+    isGameActive = false; // Ensure game is not active if limit reached
+    document.getElementById('bingo-btn').style.display = 'none';
 });
 
 // ========================================
@@ -685,13 +731,20 @@ function createEmptyBoard() {
 }
 
 // generate random unique numbers 1..25
+// generate random unique numbers 1..25
 function generateRandomBoard() {
-    let numbers = [];
-    while (numbers.length < 25) {
-        const r = Math.floor(Math.random() * 25) + 1;
-        if (!numbers.includes(r)) numbers.push(r);
-    }
-    renderPlayableBoard(numbers);
+    // Check limit before generating
+    socket.emit('request_limit_check');
+
+    // Listen for pass (one-time)
+    socket.once('limit_check_passed', () => {
+        let numbers = [];
+        while (numbers.length < 25) {
+            const r = Math.floor(Math.random() * 25) + 1;
+            if (!numbers.includes(r)) numbers.push(r);
+        }
+        renderPlayableBoard(numbers);
+    });
 }
 
 // confirm manual board, validate uniqueness
@@ -728,7 +781,12 @@ function confirmManualBoard() {
         seen.add(val);
         values.push(val);
     }
-    renderPlayableBoard(values);
+
+    // Check limit before confirming
+    socket.emit('request_limit_check');
+    socket.once('limit_check_passed', () => {
+        renderPlayableBoard(values);
+    });
 }
 
 function renderPlayableBoard(numbers) {
@@ -741,6 +799,13 @@ function renderPlayableBoard(numbers) {
     marked = new Array(25).fill(false);
     completedLines = [];
     isGameActive = true;
+
+    // Count match when Bingo board is active
+    // Server tracks limits
+    // incrementMatchCount(false); // REMOVED: Only increment on win now
+
+    // Notify server (for server-side tracking)
+    socket.emit('bingo_game_started');
 
     document.getElementById('bingo-btn').style.display = 'none';
     document.getElementById('game-status').textContent = "Game On! Mark numbers. Complete lines light up BINGO letters!";
@@ -864,6 +929,7 @@ function autoDeclareWin() {
     document.getElementById('bingo-btn').style.display = 'none';
     // Track Bingo win
     incrementStat('bingo', 'wins');
+    incrementMatchCount(true); // Enforce limit on win
 }
 
 function declareWin() {
@@ -878,4 +944,5 @@ function declareWin() {
     document.getElementById('bingo-btn').style.display = 'none';
     // Track Bingo win
     incrementStat('bingo', 'wins');
+    // Limit check handled by server response
 }
